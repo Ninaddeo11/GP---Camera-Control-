@@ -1,0 +1,64 @@
+{
+  "title": "Camera & Ingestion Health",
+  "uid": "sentinelgrid-camera-health",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "10s",
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Camera status (1=up, 0=down) per camera",
+      "type": "state-timeline",
+      "gridPos": { "h": 10, "w": 24, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "expr": "sentinelgrid_camera_status",
+          "legendFormat": "{{camera_id}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [
+            { "type": "value", "options": { "0": { "text": "down", "color": "red" } } },
+            { "type": "value", "options": { "1": { "text": "up", "color": "green" } } }
+          ]
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "title": "Reconnect attempts (5m rate)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 10 },
+      "targets": [
+        {
+          "expr": "sum(rate(sentinelgrid_reconnect_attempts_total[5m])) by (camera_id)",
+          "legendFormat": "{{camera_id}}",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Cameras currently tracked by stream_manager",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 10 },
+      "targets": [
+        { "expr": "sentinelgrid_catalogue_cameras", "refId": "A" }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Cameras currently processed by inference",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 10 },
+      "targets": [
+        { "expr": "sentinelgrid_inference_active_cameras", "refId": "A" }
+      ]
+    }
+  ]
+}

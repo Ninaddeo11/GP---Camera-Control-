@@ -1,0 +1,19 @@
+# Scrape targets for the three services that expose Prometheus metrics —
+# see each one's metrics.py for what's actually recorded.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: "stream_manager"
+    static_configs:
+      - targets: ["stream_manager:9092"]
+
+  - job_name: "inference"
+    static_configs:
+      - targets: ["inference:9090"]
+
+  - job_name: "api"
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]

@@ -1,0 +1,15 @@
+# torch/torchvision are provided by the pytorch/pytorch base image
+# (Dockerfile) — not listed here so pip doesn't try to reinstall a
+# different build over the CUDA-matched one already present.
+ultralytics==8.3.40
+opencv-python-headless==4.10.0.84
+redis==5.0.4
+prometheus-client==0.20.0
+httpx==0.27.0
+PyYAML==6.0.1
+numpy<2.0
+
+# ANPR (Phase 5) — CPU-only OCR, deliberately not paddlepaddle-gpu; see
+# ocr_engine.py module docstring for why it stays off the GPU.
+paddlepaddle==2.6.1
+paddleocr==2.7.3

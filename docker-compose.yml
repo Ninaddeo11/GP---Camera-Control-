@@ -1,0 +1,246 @@
+version: "3.9"
+
+# ============================================================================
+# Sentinel Grid — full stack orchestration.
+#
+# Build status (see README.md for the phase tracker):
+#   Phase 1 (scaffold)              -> this compose file + monorepo layout
+#   Phase 2 (registry + RBAC)       -> api (services/api)
+#   Phase 3 (ingestion)             -> go2rtc, catalogue, stream_manager (below)
+#   Phase 4 (detection + tracking)  -> inference (services/inference)
+#   Phase 5 (ANPR)                  -> inference (services/inference) — same
+#                                       container; no fine-tuned plate model
+#                                       ships here yet, see README.md
+#   Phase 6 (vehicle tracking query)-> api (Redis Streams consumer + endpoints)
+#   Phase 7 (watchlist + alerting)  -> api (consumer + WS) + web (console)
+#   Phase 8 (video wall + GIS UI)   -> web (apps/web)
+#   Phase 9 (audit + export)        -> api (audit read + evidence export)
+#   Phase 10 (polish)               -> nginx, prometheus, grafana (below);
+#                                       scalability numbers are NOT yet
+#                                       measured — see README.md
+#
+# go2rtc is the ONLY re-streaming layer (no mediamtx sidecar) — it natively
+# republishes every ingested camera as RTSP, WHEP, and HLS from one
+# instance. See services/ingestion-config/stream_manager.py.
+# ============================================================================
+
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+networks:
+  sentinelgrid:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  snapshots:
+  inference_models:
+  exports:
+  prometheus_data:
+  grafana_data:
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    container_name: sentinelgrid-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sentinelgrid}
+      POSTGRES_USER: ${POSTGRES_USER:-sentinelgrid}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change-me-in-production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-sentinelgrid}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  redis:
+    # Doubles as the Phase 4+ event bus (Redis Streams for detection/plate/
+    # watchlist events) and, later, JWT refresh-token / rate-limit storage.
+    # Sufficient at hackathon (~50-80k camera PoC) scale; no Kafka needed.
+    image: redis:7-alpine
+    container_name: sentinelgrid-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  go2rtc:
+    image: alexxit/go2rtc:latest
+    container_name: sentinelgrid-go2rtc
+    restart: unless-stopped
+    volumes:
+      - ./services/ingestion-config/generated:/config
+    ports:
+      - "1984:1984" # HTTP API / WHEP / HLS / web UI
+      - "8554:8554" # RTSP republish
+      - "8555:8555/tcp" # WebRTC/TCP fallback
+      - "8555:8555/udp" # WebRTC/UDP
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  catalogue:
+    build: ./services/catalogue-mock
+    container_name: sentinelgrid-catalogue
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  stream_manager:
+    build: ./services/ingestion-config
+    container_name: sentinelgrid-stream-manager
+    restart: unless-stopped
+    depends_on:
+      - go2rtc
+      - catalogue
+    env_file: .env
+    environment:
+      INGEST_API_URL: ${INGEST_API_URL:-http://catalogue:9000/api/ingest}
+      GO2RTC_API_URL: ${GO2RTC_API_URL:-http://go2rtc:1984}
+    volumes:
+      - ./services/ingestion-config/generated:/app/generated
+    ports:
+      - "9092:9092" # Prometheus metrics
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  api:
+    build: ./services/api
+    container_name: sentinelgrid-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    env_file: .env
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://sentinelgrid:change-me-in-production@postgres:5432/sentinelgrid}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      INGEST_API_URL: ${INGEST_API_URL:-http://catalogue:9000/api/ingest}
+    volumes:
+      # Read-only: services/inference owns writing into this volume
+      # (snapshots for evidentiary plate reads); the api service only
+      # serves them back out at /api/media/snapshots (see main.py).
+      - snapshots:/data/snapshots:ro
+      # Read-write: this service owns evidence_exports .zip packages
+      # (services/evidence_export.py) — nothing else writes here.
+      - exports:/data/exports
+    ports:
+      - "8000:8000"
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  inference:
+    build: ./services/inference
+    container_name: sentinelgrid-inference
+    restart: unless-stopped
+    depends_on:
+      - go2rtc
+      - stream_manager
+      - redis
+    env_file: .env
+    environment:
+      INGEST_API_URL: ${INGEST_API_URL:-http://catalogue:9000/api/ingest}
+      GO2RTC_RTSP_HOST: go2rtc
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      SENTINELGRID_DEVICE: ${SENTINELGRID_DEVICE:-cuda:0}
+    volumes:
+      - inference_models:/app/models
+      - snapshots:/data/snapshots
+    ports:
+      - "9090:9090" # Prometheus metrics
+    # Requires the NVIDIA Container Toolkit on the host. If running
+    # CPU-only, delete this block and set SENTINELGRID_DEVICE=cpu in .env
+    # — detector.py/Dockerfile need no other changes either way.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  web:
+    build:
+      context: ./apps/web
+      # Build args, not `environment:` — see apps/web/Dockerfile's comment
+      # on why a runtime env var can't reach NEXT_PUBLIC_* variables.
+      # Changing these requires a rebuild (`docker compose up --build`),
+      # not just a restart.
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://localhost/api}
+        NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL: ${NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL:-http://localhost:1984}
+    container_name: sentinelgrid-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  nginx:
+    image: nginx:alpine
+    container_name: sentinelgrid-nginx
+    restart: unless-stopped
+    depends_on:
+      - web
+      - api
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/certs:/etc/nginx/certs:ro
+    ports:
+      - "80:80"
+      - "443:443"
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    container_name: sentinelgrid-prometheus
+    restart: unless-stopped
+    volumes:
+      - ./infra/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9095:9090" # host 9095 — 9090 is already the inference service's port
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    container_name: sentinelgrid-grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GF_SECURITY_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GF_SECURITY_ADMIN_PASSWORD:-change-me}
+    volumes:
+      - ./infra/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./infra/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000" # host 3001 — 3000 is already the web service's port
+    networks: [sentinelgrid]
+    logging: *default-logging

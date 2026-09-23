@@ -1,0 +1,34 @@
+version: "3.9"
+
+# Dev overrides: bind-mount source for hot reload, expose extra debug ports,
+# and run the mock catalogue with autoreload. Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  stream_manager:
+    environment:
+      LOG_LEVEL: DEBUG
+      INGEST_POLL_INTERVAL_SECONDS: "15"
+    volumes:
+      - ./services/ingestion-config:/app
+    command: ["python", "-u", "stream_manager.py"]
+
+  catalogue:
+    volumes:
+      - ./services/catalogue-mock:/app
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "9000", "--reload"]
+
+  api:
+    environment:
+      LOG_LEVEL: DEBUG
+    volumes:
+      - ./services/api:/app
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+  inference:
+    environment:
+      LOG_LEVEL: DEBUG
+      INGEST_POLL_INTERVAL_SECONDS: "15"
+    volumes:
+      - ./services/inference:/app
+      - inference_models:/app/models

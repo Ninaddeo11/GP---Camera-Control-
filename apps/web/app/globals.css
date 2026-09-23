@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design mandate: navy/slate/white, one accent, no neon/glow — see
+   README.md "Design mandate". Values are "R G B" (no commas) so Tailwind's
+   `rgb(var(--x) / <alpha-value>)` opacity syntax works. */
+:root {
+  --background: 255 255 255;
+  --foreground: 15 23 42; /* slate-900 */
+  --surface: 255 255 255;
+  --surface-muted: 248 250 252; /* slate-50 */
+  --border: 226 232 240; /* slate-200 */
+  --muted: 100 116 139; /* slate-500 */
+  --accent: 29 78 156; /* muted navy-blue */
+  --accent-foreground: 255 255 255;
+  --danger: 220 38 38; /* red-600 */
+  --warning: 217 119 6; /* amber-600 */
+  --success: 5 150 105; /* emerald-600 */
+}
+
+.dark {
+  --background: 2 6 23; /* slate-950 */
+  --foreground: 226 232 240; /* slate-200 */
+  --surface: 15 23 42; /* slate-900 */
+  --surface-muted: 30 41 59; /* slate-800 */
+  --border: 51 65 85; /* slate-600 */
+  --muted: 148 163 184; /* slate-400 */
+  --accent: 96 165 250; /* blue-400, lighter for contrast on dark */
+  --accent-foreground: 2 6 23;
+  --danger: 248 113 113; /* red-400 */
+  --warning: 251 191 36; /* amber-400 */
+  --success: 52 211 153; /* emerald-400 */
+}
+
+* {
+  border-color: rgb(var(--border));
+}
+
+body {
+  background-color: rgb(var(--background));
+  color: rgb(var(--foreground));
+  font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Unacknowledged watchlist alerts — a restrained pulse, not a strobe.
+   Paired with an "Unacknowledged" text label wherever it's used, never
+   color alone (see components/ui/badge.tsx for the same rule). */
+@keyframes alert-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(var(--danger) / 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgb(var(--danger) / 0);
+  }
+}
+
+.animate-alert-pulse {
+  animation: alert-pulse 2s ease-in-out infinite;
+}

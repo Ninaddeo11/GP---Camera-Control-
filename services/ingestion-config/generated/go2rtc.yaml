@@ -1,0 +1,23 @@
+# Placeholder checked into git so the go2rtc container has a valid config on
+# the very first `docker compose up`, before stream_manager.py performs its
+# first reconciliation and overwrites this file from templates/go2rtc.yaml.j2.
+#
+# go2rtc is Sentinel Grid's only re-streaming layer (RTSP + WHEP + HLS all
+# come from this one instance) — there is no mediamtx sidecar.
+api:
+  listen: ":1984"
+  origin: "*"
+
+rtsp:
+  listen: ":8554"
+
+webrtc:
+  listen: ":8555"
+  candidates:
+    - stun:stun.l.google.com:19302
+
+log:
+  level: info
+  format: text
+
+streams: {}
