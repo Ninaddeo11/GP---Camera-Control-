@@ -23,7 +23,8 @@ export default function TraceMap({ stops }: TraceMapProps) {
     (s): s is CameraStop & { lat: number; lon: number } => s.lat !== null && s.lon !== null
   );
 
-  const center: [number, number] = located.length > 0 ? [located[0].lat, located[0].lon] : GUJARAT_CENTER;
+  const firstStop = located[0];
+  const center: [number, number] = firstStop ? [firstStop.lat, firstStop.lon] : GUJARAT_CENTER;
   const polylinePositions: [number, number][] = located.map((s) => [s.lat, s.lon]);
 
   return (

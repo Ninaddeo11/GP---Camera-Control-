@@ -40,8 +40,9 @@ export function useWhep(cameraId: string | null) {
     pc.addTransceiver("audio", { direction: "recvonly" });
 
     pc.ontrack = (event) => {
-      if (videoRef.current && event.streams[0]) {
-        videoRef.current.srcObject = event.streams[0];
+      const stream = event.streams[0];
+      if (videoRef.current && stream) {
+        videoRef.current.srcObject = stream;
       }
     };
     pc.onconnectionstatechange = () => {

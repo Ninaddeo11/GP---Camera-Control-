@@ -8,12 +8,13 @@ export function TopBar() {
   const { user, logout } = useAuth();
   if (!user) return null;
 
+  const firstJurisdiction = user.jurisdictions[0];
   const jurisdictionLabel =
-    user.jurisdictions.length === 0
+    user.jurisdictions.length === 0 || !firstJurisdiction
       ? "No jurisdiction assigned"
       : user.jurisdictions.length === 1
-        ? user.jurisdictions[0].name
-        : `${user.jurisdictions[0].name} +${user.jurisdictions.length - 1} more`;
+        ? firstJurisdiction.name
+        : `${firstJurisdiction.name} +${user.jurisdictions.length - 1} more`;
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-border bg-surface px-6">
