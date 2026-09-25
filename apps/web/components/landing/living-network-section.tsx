@@ -1,7 +1,7 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { useState } from "react";
+import { AnimatePresence, motion, useReducedMotion, useScroll, useTransform } from "framer-motion";
+import { useRef, useState } from "react";
 
 import { Reveal } from "./reveal";
 
@@ -29,6 +29,16 @@ const DEMO_NODES: DemoNode[] = [
 
 export function LivingNetworkSection() {
   const [selected, setSelected] = useState<DemoNode | null>(null);
+  const prefersReducedMotion = useReducedMotion();
+  const frameRef = useRef<HTMLDivElement>(null);
+
+  // "As the user scrolls, the camera should slowly travel through the
+  // city" (brief section 20) — a subtle scroll-linked push-in on the whole
+  // scene, not a literal free-roaming camera (which would need a much
+  // larger canvas than the visible frame to travel across). Skipped
+  // entirely under prefers-reduced-motion rather than just slowed down.
+  const { scrollYProgress } = useScroll({ target: frameRef, offset: ["start end", "end start"] });
+  const scale = useTransform(scrollYProgress, [0, 0.5, 1], [1, 1.05, 1]);
 
   return (
     <section className="py-24 sm:py-32">
@@ -42,7 +52,14 @@ export function LivingNetworkSection() {
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div className="relative mt-14 aspect-[5/3] overflow-hidden rounded border border-lp-border bg-lp-bg-1/40">
+          <div
+            ref={frameRef}
+            className="relative mt-14 aspect-[5/3] overflow-hidden rounded border border-lp-border bg-lp-bg-1/40"
+          >
+            <motion.div
+              className="absolute inset-0"
+              style={prefersReducedMotion ? undefined : { scale }}
+            >
             <svg viewBox="0 0 1000 600" className="h-full w-full" aria-hidden="true">
               <defs>
                 <pattern id="lp-net-grid" width="50" height="50" patternUnits="userSpaceOnUse">
@@ -78,6 +95,7 @@ export function LivingNetworkSection() {
                 </span>
               </button>
             ))}
+            </motion.div>
 
             <AnimatePresence>
               {selected && (

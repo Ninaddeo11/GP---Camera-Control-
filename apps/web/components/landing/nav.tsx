@@ -12,8 +12,8 @@ import { LogoMark } from "./logo-mark";
 const NAV_LINKS = [
   { href: "#platform", label: "Platform" },
   { href: "#intelligence", label: "Intelligence" },
+  { href: "#capabilities", label: "Capabilities" },
   { href: "#security", label: "Security" },
-  { href: "#architecture", label: "Architecture" },
   { href: "#about", label: "About" },
 ];
 

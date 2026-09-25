@@ -70,11 +70,13 @@ body {
    and is allowed to be more cinematic, per components/landing's brief.
    ------------------------------------------------------------------------- */
 .landing-page {
+  --lp-bg-00: 3 7 13;      /* #03070D — deepest hero background layer */
   --lp-bg-0: 5 11 18;      /* #050B12 */
   --lp-bg-1: 7 17 28;      /* #07111C */
   --lp-bg-2: 11 22 36;     /* #0B1624 */
   --lp-primary: 22 136 255;   /* #1688FF */
   --lp-primary-2: 46 168 255; /* #2EA8FF */
+  --lp-tertiary: 87 188 255;  /* #57BCFF */
   --lp-secondary: 105 199 255; /* #69C7FF */
   --lp-success: 50 213 131;   /* #32D583 */
   --lp-warning: 245 185 66;   /* #F5B942 */

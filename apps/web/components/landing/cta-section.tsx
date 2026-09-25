@@ -15,9 +15,9 @@ export function CtaSection() {
       <div className="relative mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
         <Reveal>
           <h2 className="text-3xl font-bold leading-tight tracking-tight text-lp-text-0 sm:text-5xl">
-            TURN CAMERA DATA INTO
+            THE CITY IS ALWAYS MOVING.
             <br />
-            <span className="text-lp-primary-2">OPERATIONAL INTELLIGENCE.</span>
+            <span className="text-lp-primary-2">UNDERSTAND IT.</span>
           </h2>
           <p className="mx-auto mt-6 max-w-xl text-base text-lp-text-1">
             One platform for video, vision, tracking, ANPR, events, evidence and

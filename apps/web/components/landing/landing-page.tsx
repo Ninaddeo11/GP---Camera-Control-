@@ -1,19 +1,21 @@
 "use client";
 
-import { ArchitectureSection } from "./architecture-section";
+import { AnprSection } from "./anpr-section";
+import { CameraUnderstandsSection } from "./camera-understands-section";
 import { CapabilitiesSection } from "./capabilities-section";
 import { CtaSection } from "./cta-section";
-import { EventIntelligenceSection } from "./event-intelligence-section";
+import { EventCorrelationSection } from "./event-correlation-section";
 import { LandingFooter } from "./footer";
 import { FrameToIntelligenceSection } from "./frame-to-intelligence-section";
 import { Hero } from "./hero";
 import { LivingNetworkSection } from "./living-network-section";
+import { MultiCameraSection } from "./multi-camera-section";
 import { LandingNav } from "./nav";
-import { PipelineSection } from "./pipeline-section";
+import { PipelineWordsSection } from "./pipeline-words-section";
 import { RolesSection } from "./roles-section";
-import { SearchDemoSection } from "./search-demo-section";
+import { ScrollCameraExperienceSection } from "./scroll-camera-experience-section";
 import { SecuritySection } from "./security-section";
-import { TelemetryStrip } from "./telemetry-strip";
+import { TransitionStrip } from "./transition-strip";
 
 /**
  * The public "/" experience — see README.md "Design mandate" for why this
@@ -23,22 +25,28 @@ import { TelemetryStrip } from "./telemetry-strip";
  * independently at the page level) so app/page.tsx itself can stay a
  * server component and export SEO metadata, which a "use client" page
  * cannot do.
+ *
+ * Section order follows the V2 brief's narrative arc: a camera seeing, to
+ * a camera understanding, to a platform that operates on that
+ * understanding — rather than the V1 structure of stats-then-features.
  */
 export function LandingPage() {
   return (
     <div className="landing-page min-h-screen overflow-x-hidden">
       <LandingNav />
       <Hero />
-      <TelemetryStrip />
-      <PipelineSection />
-      <CapabilitiesSection />
+      <TransitionStrip />
+      <CameraUnderstandsSection />
       <FrameToIntelligenceSection />
+      <ScrollCameraExperienceSection />
+      <PipelineWordsSection />
+      <MultiCameraSection />
+      <AnprSection />
+      <EventCorrelationSection />
       <LivingNetworkSection />
-      <EventIntelligenceSection />
+      <CapabilitiesSection />
       <RolesSection />
       <SecuritySection />
-      <ArchitectureSection />
-      <SearchDemoSection />
       <CtaSection />
       <LandingFooter />
     </div>

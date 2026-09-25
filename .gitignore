@@ -11,6 +11,7 @@ node_modules/
 dist/
 apps/web/.next/
 apps/web/out/
+*.tsbuildinfo
 
 # Env
 .env

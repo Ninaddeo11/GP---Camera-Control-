@@ -165,8 +165,21 @@ the 10-phase tracker above is unaffected by it.
       palette (`.landing-page` in `app/globals.css`) than the calm
       enterprise dashboard, by design — see that file's comment for why.
       All camera/plate/event data shown is explicitly labeled illustrative
-      demo data; nothing on the public page calls a real API. *(this
-      commit)*
+      demo data; nothing on the public page calls a real API.
+      **V2 rebuild** replaced the stats-first V1 structure with a
+      narrative arc (camera seeing → understanding → platform) and removed
+      every trace of operational/technical detail from the public
+      surface — no camera/event/track/plate counts, no architecture
+      diagram, no internal service names, no "illustrative system
+      telemetry" framing at all. New cinematic sections: a mouse-reactive,
+      phase-cycling hero background; a sticky scroll-scrubbed
+      single-vehicle sequence; a hover/auto-cycling SEE→UNDERSTAND word
+      pipeline; multi-camera (CSS Motion Path), ANPR, and event-correlation
+      (radial signal graph) sequences; a scroll-linked push-in on the
+      living-network map. Skipped from the V2 brief's 45 micro-specs, by
+      explicit scope decision: a custom cursor, a literal hand-authored
+      9-phase hero state machine, and 6 independently-tuned parallax
+      layers (built with 2 depth groups instead). *(this commit)*
 - [ ] Transformation Phase 15 — Production security hardening (SSRF,
       upload validation, secret-management review)
 - [ ] Transformation Phase 16 — Test suite (none exists yet — see

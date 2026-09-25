@@ -27,13 +27,13 @@ export function RolesSection() {
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-lp-text-0 sm:text-5xl">
-            ONE PLATFORM.
+            INTELLIGENCE,
             <br />
-            <span className="text-lp-primary-2">DIFFERENT PERSPECTIVES.</span>
+            <span className="text-lp-primary-2">DELIVERED WITH CONTEXT.</span>
           </h2>
           <p className="mt-5 text-base text-lp-text-1">
-            Every user sees what they are authorized to see, based on their role,
-            jurisdiction and permissions.
+            Every user sees what they are authorized to see, shaped by their role
+            and the environment they are responsible for.
           </p>
         </Reveal>
 

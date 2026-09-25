@@ -24,9 +24,9 @@ export function SecuritySection() {
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-lp-text-0 sm:text-5xl">
-            INTELLIGENCE
+            POWERFUL INTELLIGENCE,
             <br />
-            <span className="text-lp-primary-2">WITHOUT LOSING CONTROL.</span>
+            <span className="text-lp-primary-2">CONTROLLED ACCESS.</span>
           </h2>
         </Reveal>
 

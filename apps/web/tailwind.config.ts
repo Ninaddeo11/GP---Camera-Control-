@@ -24,11 +24,13 @@ const config: Config = {
         // Public landing page only — see app/globals.css's .landing-page
         // block. "lp-" prefixed so these never get reached for by mistake
         // inside the authenticated app shell.
+        "lp-bg-00": "rgb(var(--lp-bg-00) / <alpha-value>)",
         "lp-bg-0": "rgb(var(--lp-bg-0) / <alpha-value>)",
         "lp-bg-1": "rgb(var(--lp-bg-1) / <alpha-value>)",
         "lp-bg-2": "rgb(var(--lp-bg-2) / <alpha-value>)",
         "lp-primary": "rgb(var(--lp-primary) / <alpha-value>)",
         "lp-primary-2": "rgb(var(--lp-primary-2) / <alpha-value>)",
+        "lp-tertiary": "rgb(var(--lp-tertiary) / <alpha-value>)",
         "lp-secondary": "rgb(var(--lp-secondary) / <alpha-value>)",
         "lp-success": "rgb(var(--lp-success) / <alpha-value>)",
         "lp-warning": "rgb(var(--lp-warning) / <alpha-value>)",
