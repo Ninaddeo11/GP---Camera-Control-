@@ -37,6 +37,13 @@ class CameraEntry(BaseModel):
     resolution: str
     codec: str
     fps: float
+    # Matches the real gateway's /api/ingest contract, which reports live
+    # status per camera alongside its stream properties — see
+    # docs/gateway-contract.md. stream_manager.py and
+    # services/inference/camera_catalogue_client.py both honor this: a
+    # camera the gateway itself already reports as down is skipped rather
+    # than attempted and left to fail through the reconnect/backoff path.
+    live: bool = True
     protocols: Protocols
 
 
@@ -131,6 +138,27 @@ def simulate_restore(camera_id: str) -> dict:
         raise HTTPException(status_code=404, detail="unknown camera_id")
     _active_ids.add(camera_id)
     return {"camera_id": camera_id, "active": True}
+
+
+@app.post("/api/ingest/simulate/mark-offline/{camera_id}")
+def simulate_mark_offline(camera_id: str) -> dict:
+    """Distinct from /simulate/remove: this camera stays IN the catalogue
+    (as the real gateway would for a camera that's temporarily down) but
+    reports live=false, so consumers can skip it without a failed
+    connection attempt — the scenario /simulate/remove doesn't cover.
+    """
+    if camera_id not in _ALL_CAMERAS:
+        raise HTTPException(status_code=404, detail="unknown camera_id")
+    _ALL_CAMERAS[camera_id].live = False
+    return {"camera_id": camera_id, "live": False}
+
+
+@app.post("/api/ingest/simulate/mark-live/{camera_id}")
+def simulate_mark_live(camera_id: str) -> dict:
+    if camera_id not in _ALL_CAMERAS:
+        raise HTTPException(status_code=404, detail="unknown camera_id")
+    _ALL_CAMERAS[camera_id].live = True
+    return {"camera_id": camera_id, "live": True}
 
 
 @app.get("/healthz")

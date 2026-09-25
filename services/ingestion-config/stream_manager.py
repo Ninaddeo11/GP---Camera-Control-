@@ -189,6 +189,15 @@ def resolve_camera(entry: dict) -> Optional[Camera]:
         log.warning("Skipping catalogue entry with no camera_id: %r", entry)
         return None
 
+    # The gateway reports live status per camera in the catalogue itself
+    # (see docs/gateway-contract.md) — a camera already known to be down
+    # is skipped here rather than attempted and left to fail through the
+    # reconnect/backoff path in _check_health. It stays in `self.cameras`
+    # as absent, so it's treated the same as any other camera not
+    # currently in the catalogue (no stream pushed, nothing to tear down).
+    if entry.get("live") is False:
+        return None
+
     protocols = entry.get("protocols") or {}
     rtsp_url = protocols.get("rtsp")
     whep_url = protocols.get("whep")
@@ -392,7 +401,10 @@ class StreamSupervisor:
             # Close out cameras no longer in the catalogue promptly, rather
             # than leaving a dangling consumer connection open against the
             # gateway (only open what we're actively processing).
-            log.info("Camera %s removed from catalogue; tearing down stream", cid)
+            # Covers two distinct catalogue states that both mean "stop
+            # serving this camera": it dropped out of /api/ingest entirely,
+            # or it's still listed but now reports live=false.
+            log.info("Camera %s no longer usable (removed or marked not-live); tearing down stream", cid)
             await self._safe_call(self.go2rtc.remove_stream(cid))
             self.reconnect_state.pop(cid, None)
             try:

@@ -590,11 +590,16 @@ the actual schema and stream field names.
 
 ### Camera catalogue contract
 
-`stream_manager.py` treats `INGEST_API_URL` as the single source of truth
-for what cameras exist and their properties (codec, resolution, fps) — it
-never hardcodes a camera list or a URL pattern. Any service implementing
-this JSON contract can replace `services/catalogue-mock` in production,
-including the real gateway:
+**This contract is now confirmed, not assumed** — see
+[docs/gateway-contract.md](docs/gateway-contract.md) for the organizer-
+provided integration spec verbatim, with every hard constraint
+cross-referenced to exactly where in this codebase it's enforced. The
+short version: `stream_manager.py` treats `INGEST_API_URL` as the single
+source of truth for what cameras exist and their properties (codec,
+resolution, fps, live status) — it never hardcodes a camera list or a URL
+pattern. Any service implementing this JSON contract can replace
+`services/catalogue-mock` in production, including the real gateway (only
+`INGEST_API_URL` and auth need to change):
 
 ```json
 {
@@ -605,6 +610,7 @@ including the real gateway:
       "department": "Ahmedabad Traffic Police",
       "lat": 23.0225, "lon": 72.5714,
       "resolution": "1280x720", "codec": "h264", "fps": 25,
+      "live": true,
       "protocols": {
         "rtsp": "rtsp://user:pass@host:554/stream1",
         "whep": null,
@@ -620,6 +626,10 @@ priority order **RTSP → WHEP → HLS**, based on whichever `protocols.*`
 fields are non-null, and forces `rtsp_transport=tcp` on every RTSP source.
 This is about how *we pull from the camera*; regardless of that choice,
 go2rtc always republishes the camera as RTSP + WHEP + HLS for consumers.
+A camera reported with `"live": false` is skipped entirely by both
+`stream_manager.py` and `services/inference` — no connection is even
+attempted, rather than being attempted and left to fail through the
+reconnect/backoff path.
 
 ### Hard ingestion constraints — where each one is enforced
 
@@ -634,6 +644,56 @@ go2rtc always republishes the camera as RTSP + WHEP + HLS for consumers.
 | Scene discontinuity on feed loop = hard cut, not infinite continuity | `inference/camera_source.py` (PTS-jump detection) + `inference/tracker.py` (`CameraTracker.reset`) |
 | Never call the gateway's control API / never publish back to it | `stream_manager.py` and `inference/camera_catalogue_client.py` (both read-only) |
 | Only open cameras actively being processed | `stream_manager.py` (`_reconcile`) and `inference/main.py` (worker threads stopped/joined when a camera drops out of the catalogue) |
+
+## Deploying `apps/web` to Vercel
+
+Only the Next.js dashboard can go on Vercel — Vercel hosts frontends, not
+Postgres/Redis/go2rtc/GPU containers. **The rest of the stack (`api`,
+`inference`, `stream_manager`, `catalogue`, `postgres`, `redis`, `go2rtc`)
+still has to run somewhere reachable over the network** — the existing
+`docker compose` stack on a VM, cloud instance, or the actual PoC hardware.
+Deploying the dashboard to Vercel gives you a stable, shareable submission
+link for the UI; it does not replace the backend deployment.
+
+**Root Directory: `apps/web`**
+
+This is a monorepo — `apps/web` is one of several projects in it, and it's
+the only one with a `package.json` Vercel would recognize as a Next.js
+app. When importing the repo in Vercel:
+
+1. **Import Project** → select this GitHub repo.
+2. Vercel will likely fail to auto-detect a framework at the repo root
+   (correct — there's no `package.json` there). Open **Project Settings →
+   General → Root Directory**, set it to `apps/web`, and re-run detection.
+   Framework Preset should then read "Next.js" automatically.
+3. Build Command / Output Directory: leave on the Next.js defaults
+   (`next build`, `.next`) — no override needed.
+4. Under **Environment Variables**, add (Production and Preview both):
+   - `NEXT_PUBLIC_API_BASE_URL` — the public URL of your deployed `api`
+     service (e.g. `https://your-domain.example/api`), **not**
+     `localhost`. This has to be reachable from the browser, not just from
+     Vercel's build servers.
+   - `NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL` — the public URL your `go2rtc`
+     container is reachable at (e.g. `https://your-domain.example:8554`
+     or wherever it's exposed). Subject to the go2rtc auth/TLS gap in
+     [Known gaps](#known-gaps) below either way.
+
+   Both are compiled into the client bundle at build time (see
+   `apps/web/Dockerfile`'s comment on why — the same rule applies to
+   Vercel's build), so changing either later means **redeploying**, not
+   just editing a running deployment's env vars.
+5. Deploy. On your backend's side, add the Vercel deployment's URL (e.g.
+   `https://sentinel-grid.vercel.app`) to `CORS_ORIGINS` in the backend's
+   `.env` and restart `api` — the frontend and backend are now on
+   different origins (unlike the bundled nginx setup, where everything is
+   same-origin), so CORS has to explicitly allow it.
+
+No `vercel.json` is included or needed — Root Directory plus Vercel's
+standard Next.js framework detection is sufficient. This hasn't been
+deployed to a live Vercel project in this environment (no internet-facing
+deploy target available here); the steps above are correct against
+Vercel's documented monorepo/Next.js behavior but, like everything else in
+this repo, worth a first real run before you rely on it for submission day.
 
 ## RBAC model (Phase 2 — implemented)
 
@@ -685,6 +745,35 @@ regardless of which endpoint triggered it. A Postgres trigger rejects any
 credentials. Sensitive endpoints (tracking, watchlist, export, once built in
 Phases 6/7/9) additionally pass `audit_on_success=True` so *every* access is
 logged, not just denials.
+
+## Evaluation framework mapping
+
+Mapped against the organizer's stated evaluation areas, honestly —
+"built" is not the same as "verified," and that distinction is marked
+explicitly rather than papered over.
+
+**A. Common evaluation areas**
+
+| # | Area | Status |
+|---|---|---|
+| 01 | Successful test case (onboard + operate on the government feed) | Code is written against the confirmed real contract ([docs/gateway-contract.md](docs/gateway-contract.md)) and cross-referenced line-by-line to where each rule is enforced — but **not yet run against the actual gateway**, only against the mock. This is the single highest-priority thing to verify before submission. |
+| 02 | Solution presentation (PPT/PDF) | Not started — outside this repo's scope; the architecture diagram and phase breakdown below are meant to be source material for it, not a substitute. |
+| 03 | Solution architecture (HLD, security, interoperability) | See [Architecture](#architecture) and [RBAC model](#rbac-model-phase-2--implemented). go2rtc-as-sole-relay, jurisdiction-scoped RBAC behind one policy surface, and the Redis Streams decoupling between inference and the API are the three architectural decisions worth highlighting in a write-up. |
+| 04 | Working platform + demonstration (own feed + government feed) | Runs end to end against the mock catalogue and public demo RTSP streams (`scripts/demo.py`); swapping to the government feed is a config change (`INGEST_API_URL`) per the contract above, not a code change — but that swap itself is untested, per row 01. |
+| 05 | Video analytics output (ANPR, detection, timestamps, reports) | Vehicle/person detection (Phase 4) and ANPR (Phase 5) are both implemented; **ANPR has no fine-tuned Indian-plate model shipped**, so plate reads won't actually happen until one is trained and dropped in (see [Known gaps](#known-gaps)) — detection/tracking works without it. |
+| 06 | Scalability & PoC readiness | Architecture is designed for it (stateless workers, one Redis consumer group per concern, PostGIS not SQLite) — but the acceptance-checklist-grade requirement ("grounded in actual measured resource usage") is **not met yet**: `scripts/benchmark.py` exists to produce real numbers, none have been collected. Do not submit a guessed number. |
+| 07 | Submission completeness | This repo, [README.md](README.md), and [docs/gateway-contract.md](docs/gateway-contract.md) are complete and internally consistent as engineering documentation. Credentials for the demo accounts are in `services/api/scripts/seed_users.py` (rotate before any real deployment). |
+
+**B. Bonus consideration**
+
+| Capability | Status |
+|---|---|
+| Innovative/hybrid architecture | go2rtc-only re-streaming + Redis Streams as the sole event bus (no Kafka) is a deliberate simplification over the more common multi-broker pattern — worth stating explicitly as a design choice, not an omission. |
+| Advanced cross-camera vehicle tracking | Built (Phase 6): PostGIS-based inferred speed between consecutive camera stops, jurisdiction-aware route reconstruction. |
+| Additional analytics beyond ANPR | Person detection is already emitted alongside vehicle detection (Phase 4) but nothing downstream consumes it yet (no loitering/intrusion logic) — a plausible bonus feature to add if time permits before submission. |
+| Edge/bandwidth optimization | Not addressed — every camera's full-resolution stream is pulled centrally. Worth naming as a known limitation if asked, not a hidden gap. |
+| Enhanced security/auditability/RBAC | This is arguably the strongest bonus area already built: T1-T9 rank × jurisdiction RBAC behind one policy surface, hash-chained tamper-evident audit log, Section 65B-style evidentiary export with per-file SHA-256. |
+| Dashboards, alerts, health monitoring, integration-ready APIs | Built: the full dashboard (Phase 8), live watchlist alerts (Phase 7), Prometheus/Grafana (Phase 10), and a documented REST/WebSocket API surface (`/api/openapi.json` via FastAPI's auto-generated schema). |
 
 ## Known gaps
 

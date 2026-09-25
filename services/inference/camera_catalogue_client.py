@@ -27,6 +27,10 @@ async def fetch_active_camera_ids() -> set[str]:
     camera_ids: set[str] = set()
     for entry in entries:
         camera_id = entry.get("camera_id")
-        if camera_id:
+        # The gateway reports live status per camera in the catalogue
+        # itself (see docs/gateway-contract.md) — skip spinning up a
+        # worker thread for a camera it already knows is down, same as
+        # stream_manager.py does on the ingestion side.
+        if camera_id and entry.get("live") is not False:
             camera_ids.add(camera_id)
     return camera_ids
