@@ -20,6 +20,7 @@ from api.deps import get_db
 from models.evidence_export import EvidenceExport
 from models.rbac import User
 from schemas.evidence import EvidenceExportRequest, EvidenceExportResult
+from security.rate_limit import rate_limit
 from security.rbac import require_permission
 from services import evidence_export
 
@@ -30,7 +31,11 @@ def _clean_plate_query(raw: str) -> str:
     return re.sub(r"[^A-Za-z0-9]", "", raw).upper()
 
 
-@router.post("/export", response_model=EvidenceExportResult)
+@router.post(
+    "/export",
+    response_model=EvidenceExportResult,
+    dependencies=[Depends(rate_limit("evidence_export", 10, 3600))],
+)
 async def create_export(
     payload: EvidenceExportRequest,
     db: AsyncSession = Depends(get_db),

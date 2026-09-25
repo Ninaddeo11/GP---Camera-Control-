@@ -38,22 +38,43 @@ export class ApiRequestError extends Error {
   }
 }
 
-async function refreshAccessToken(): Promise<string | null> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) return null;
+// The backend now rotates the refresh token on every use (see
+// services/api/api/auth.py) and treats an already-used refresh token
+// being presented again as a theft/replay signal, revoking every session
+// for the account. Two concurrent requests that both hit a 401 at nearly
+// the same moment would otherwise each try to refresh independently — the
+// second one arriving at the backend with a refresh token the first one
+// already rotated away, triggering exactly that revocation by accident.
+// This module-level in-flight guard makes every concurrent caller share
+// one refresh call instead.
+let refreshPromise: Promise<string | null> | null = null;
 
-  const resp = await fetch(`${API_BASE}/auth/refresh`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refresh_token: refreshToken }),
-  });
-  if (!resp.ok) {
-    clearTokens();
-    return null;
+async function refreshAccessToken(): Promise<string | null> {
+  if (refreshPromise) return refreshPromise;
+
+  refreshPromise = (async () => {
+    const refreshToken = getRefreshToken();
+    if (!refreshToken) return null;
+
+    const resp = await fetch(`${API_BASE}/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ refresh_token: refreshToken }),
+    });
+    if (!resp.ok) {
+      clearTokens();
+      return null;
+    }
+    const data = await resp.json();
+    setTokens(data.access_token, data.refresh_token);
+    return data.access_token as string;
+  })();
+
+  try {
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
   }
-  const data = await resp.json();
-  setTokens(data.access_token);
-  return data.access_token as string;
 }
 
 /**

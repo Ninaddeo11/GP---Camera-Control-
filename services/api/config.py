@@ -43,6 +43,14 @@ class Settings(BaseSettings):
     # otherwise, this service already has one.
     log_level: str = "INFO"
 
+    # "development" (default) or "production". Gates two things:
+    # services/api/scripts/seed_users.py refuses to seed demo accounts
+    # against ENVIRONMENT=production without an explicit override, and
+    # POST /auth/forgot-password only echoes the reset token in its
+    # response outside production (no SMTP is configured — see that
+    # route's docstring).
+    environment: str = "development"
+
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]

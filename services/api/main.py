@@ -23,9 +23,10 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from api import alerts, audit, auth, cameras, evidence, tracking, watchlist
+from api import admin, alerts, audit, auth, cameras, evidence, tracking, watchlist
 from config import settings
 from metrics import MetricsMiddleware, metrics_endpoint
+from security.rate_limit import GeneralRateLimitMiddleware
 from services import plate_event_consumer, watchlist_engine
 
 logging.basicConfig(
@@ -62,6 +63,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.add_middleware(MetricsMiddleware)
+app.add_middleware(GeneralRateLimitMiddleware)
 
 # Read-only view onto the `snapshots` Docker volume services/inference
 # writes into — see services/media.py for the path <-> URL mapping.
@@ -109,3 +111,4 @@ app.include_router(watchlist.router, prefix="/api")
 app.include_router(alerts.router, prefix="/api")
 app.include_router(evidence.router, prefix="/api")
 app.include_router(audit.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")

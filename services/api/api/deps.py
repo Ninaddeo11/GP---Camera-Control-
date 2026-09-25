@@ -55,4 +55,11 @@ async def get_current_user(
     if user is None or not user.is_active:
         raise _unauthorized("Account not found or inactive")
 
+    # Server-side session revocation: a token minted before the user's
+    # token_version was last bumped (password reset, or an admin's
+    # "revoke sessions" action) is rejected even though it hasn't expired
+    # yet — see security/jwt.py's module docstring.
+    if payload.get("ver") != user.token_version:
+        raise _unauthorized("Session has been revoked")
+
     return user

@@ -1,6 +1,6 @@
 import uuid
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class LoginRequest(BaseModel):
@@ -19,10 +19,13 @@ class RefreshRequest(BaseModel):
     refresh_token: str
 
 
-class AccessTokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-    expires_in_seconds: int
+class ForgotPasswordRequest(BaseModel):
+    username: str
+
+
+class ResetPasswordRequest(BaseModel):
+    reset_token: str
+    new_password: str = Field(min_length=8)
 
 
 class JurisdictionOut(BaseModel):

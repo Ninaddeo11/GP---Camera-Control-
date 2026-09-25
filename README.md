@@ -104,6 +104,73 @@ until it's actually runnable and verified.
 > this brief's exact phase order was finalized. It doesn't depend on Phase 2
 > and needed no rework once Phase 2 landed.
 
+## GP Sentinel transformation (in progress)
+
+The 10-phase build above is a complete, working hackathon MVP. A separate,
+much larger initiative — turning it into a mature enterprise platform
+("GP Sentinel": public landing page, Command Center, full admin module,
+notifications, analytics, CI/CD, a test suite, and more) — is layered on
+top of it, worked through in its own 18 phases so it doesn't destabilize
+what's already working. This section tracks that initiative specifically;
+the 10-phase tracker above is unaffected by it.
+
+- [x] **Transformation Phase 1 — Repository audit.** Satisfied by the
+      existing 10-phase build itself — this session already has a
+      complete map of the auth, RBAC, jurisdiction, streaming, vision,
+      ANPR, watchlist, evidence, and audit architecture.
+- [x] **Transformation Phase 2 — Authentication/session hardening.**
+      Refresh-token rotation with reuse detection (a replayed, already-
+      rotated refresh token revokes every session for that user, not just
+      that one request), server-side session revocation via
+      `users.token_version` (embedded in every token, checked on every
+      request), an admin-triggered `POST /admin/users/{username}/revoke-
+      sessions`, forgot/reset-password endpoints and pages (no SMTP is
+      configured — see [Known gaps](#known-gaps)), Redis-backed rate
+      limiting (a strict bucket on login/forgot-password, a generous
+      catch-all on everything else), and a production guard on
+      `scripts/seed_users.py` so demo credentials can't be seeded into a
+      production database by habit. *(this commit)*
+- [ ] Transformation Phase 3 — RBAC + jurisdiction enforcement (the
+      permission list from the brief is broader than what's seeded today;
+      reconciling the two is this phase's job)
+- [ ] Transformation Phase 4 — Database/event architecture (a first-class
+      Event Engine on top of the existing plate_events/watchlist_matches
+      tables)
+- [ ] Transformation Phase 5 — Streaming/camera infrastructure hardening
+      (SSRF protection on camera URLs, protected go2rtc management API)
+- [ ] Transformation Phase 6 — Vision pipeline (detector/tracker/ANPR
+      abstraction interfaces, model registry)
+- [ ] Transformation Phase 7 — ANPR temporal confidence fusion (multiple
+      OCR reads across frames converging on one high-confidence plate,
+      rather than today's single-read-per-track dedup)
+- [ ] Transformation Phase 8 — Watchlists + alerts (full alert lifecycle:
+      open/acknowledged/investigating/resolved/dismissed, assignment,
+      escalation)
+- [ ] Transformation Phase 9 — Vehicle intelligence UI polish
+- [ ] Transformation Phase 10 — Evidence + audit UI polish
+- [ ] Transformation Phase 11 — Command Center (`/dashboard`, replacing
+      `/trace` as the post-login landing page)
+- [ ] Transformation Phase 12 — Admin module (user/role/jurisdiction CRUD
+      UI — the backend RBAC exists; there's no UI to manage it yet)
+- [ ] Transformation Phase 13 — Analytics + GIS enhancements
+- [ ] Transformation Phase 14 — Public landing page (`/` as marketing, not
+      an auth redirect)
+- [ ] Transformation Phase 15 — Production security hardening (SSRF,
+      upload validation, secret-management review)
+- [ ] Transformation Phase 16 — Test suite (none exists yet — see
+      [Known gaps](#known-gaps))
+- [ ] Transformation Phase 17 — Docker/CI-CD hardening (GitHub Actions
+      pipeline; non-root containers; resource limits)
+- [ ] Transformation Phase 18 — Final integration pass
+
+**Deliberately not touched in Transformation Phase 2:** the API response
+envelope (Part 28 of the brief — `{success, data, message}` instead of
+today's `{detail, code}`) is a breaking change to every existing endpoint
+and every frontend call site. Changing it requires updating both sides in
+lockstep in one dedicated pass, not folding it into an unrelated phase —
+scheduled as part of a later phase once the rest of the transformation's
+shape is clearer, rather than rushed here.
+
 ## Assumptions currently in effect (confirmed with the team 2026-09-22)
 
 - **Backend stack:** Python + FastAPI for `services/api`, for proximity to
@@ -800,6 +867,14 @@ knowing about before treating this as demo-ready:
   built, access the dashboard directly at `http://localhost:3000` (bypassing
   nginx/TLS) if you need the video wall to actually connect — every other
   page works fine over HTTPS since they only talk to `api`, not go2rtc.
+- **No email delivery is configured anywhere.** `POST /auth/forgot-password`
+  (Transformation Phase 2) generates a real, working reset token, but
+  "sends" it by logging it server-side — readable by anyone with log
+  access, which is fine for a dev/demo environment and not acceptable for
+  a real deployment. Outside `ENVIRONMENT=production` it's also returned
+  directly in the API response so the flow is testable without log
+  access; in production it never is. Wiring real SMTP/email delivery in
+  is the fix, not built here.
 - **`Camera.status` isn't live-synced.** The registry map colors markers
   by this field (green/yellow/red, per the design brief), but nothing yet
   writes live health from go2rtc/stream_manager back into it — it reflects

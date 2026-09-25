@@ -133,6 +133,14 @@ class User(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     # jurisdiction grants until explicitly assigned (see UserJurisdiction).
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
+    # Embedded as the "ver" claim in every access/refresh token this user
+    # is issued (security/jwt.py). Bumping it invalidates every token
+    # issued before the bump in one step — server-side session revocation
+    # without needing a denylist of every individual token ever issued.
+    # Bumped on password reset (api/auth.py) and by an admin's explicit
+    # "revoke sessions" action (api/admin.py).
+    token_version: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+
     role: Mapped["Role"] = relationship("Role")
     jurisdiction_grants: Mapped[list["UserJurisdiction"]] = relationship(
         "UserJurisdiction", back_populates="user", cascade="all, delete-orphan"

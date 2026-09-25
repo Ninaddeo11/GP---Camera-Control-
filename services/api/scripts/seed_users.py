@@ -12,14 +12,22 @@ Run inside the api container:
 from __future__ import annotations
 
 import asyncio
+import os
+import sys
 
 from sqlalchemy import select
 
+from config import settings
 from database import AsyncSessionLocal
 from models.rbac import Jurisdiction, Permission, Role, RolePermission, User, UserJurisdiction
 from security.passwords import hash_password
 
-DEMO_PASSWORD = "ChangeMe!2026"  # dev/demo only — rotate before any real deployment
+# Overridable via SEED_DEMO_PASSWORD; the literal here is a dev/demo
+# default only. This script refuses to run at all against
+# ENVIRONMENT=production unless SEED_DEMO_PASSWORD is also set, so a
+# known, guessable password can never end up seeded into a production
+# database by someone reusing this script out of habit.
+DEMO_PASSWORD = os.environ.get("SEED_DEMO_PASSWORD", "ChangeMe!2026")
 
 ROLES = [
     # (code, tier_level, name)
@@ -194,4 +202,14 @@ async def seed() -> None:
 
 
 if __name__ == "__main__":
+    if settings.environment == "production" and "SEED_DEMO_PASSWORD" not in os.environ:
+        print(
+            "Refusing to seed demo accounts: ENVIRONMENT=production and no "
+            "SEED_DEMO_PASSWORD override was provided. If you really intend to "
+            "seed these accounts in production (e.g. an initial admin), set "
+            "SEED_DEMO_PASSWORD to something that isn't this script's default "
+            "before re-running.",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     asyncio.run(seed())
