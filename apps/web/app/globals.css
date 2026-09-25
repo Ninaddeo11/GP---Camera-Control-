@@ -59,3 +59,74 @@ body {
 .animate-alert-pulse {
   animation: alert-pulse 2s ease-in-out infinite;
 }
+
+/* -------------------------------------------------------------------------
+   Public landing page ("/") only — a deliberately different, cinematic dark
+   palette from the authenticated app shell's calm enterprise tokens above.
+   Scoped under .landing-page so it never leaks into the dashboard, and the
+   dashboard's tokens never leak into the landing page either. See
+   README.md "Design mandate" for why these are intentionally different:
+   the app shell is Linear/Stripe-calm; the public site is the "front door"
+   and is allowed to be more cinematic, per components/landing's brief.
+   ------------------------------------------------------------------------- */
+.landing-page {
+  --lp-bg-0: 5 11 18;      /* #050B12 */
+  --lp-bg-1: 7 17 28;      /* #07111C */
+  --lp-bg-2: 11 22 36;     /* #0B1624 */
+  --lp-primary: 22 136 255;   /* #1688FF */
+  --lp-primary-2: 46 168 255; /* #2EA8FF */
+  --lp-secondary: 105 199 255; /* #69C7FF */
+  --lp-success: 50 213 131;   /* #32D583 */
+  --lp-warning: 245 185 66;   /* #F5B942 */
+  --lp-alert: 255 77 90;      /* #FF4D5A */
+  --lp-text-0: 255 255 255;
+  --lp-text-1: 203 213 225; /* slate-300 */
+  --lp-text-2: 148 163 184; /* slate-400 */
+  --lp-border: 30 58 95;   /* a dim, desaturated blue-slate border */
+
+  background-color: rgb(var(--lp-bg-0));
+  color: rgb(var(--lp-text-0));
+}
+
+@keyframes lp-node-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgb(var(--lp-primary) / 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgb(var(--lp-primary) / 0);
+  }
+}
+.lp-node-pulse {
+  animation: lp-node-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes lp-dash-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+.lp-data-flow {
+  stroke-dasharray: 4 6;
+  animation: lp-dash-flow 1.2s linear infinite;
+}
+
+@keyframes lp-scan {
+  0% { transform: translateY(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(100%); opacity: 0; }
+}
+.lp-scan-line {
+  animation: lp-scan 6s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-page *,
+  .landing-page *::before,
+  .landing-page *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

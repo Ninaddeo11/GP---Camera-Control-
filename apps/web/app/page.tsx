@@ -1,18 +1,25 @@
-"use client";
+import type { Metadata } from "next";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { LandingPage } from "@/components/landing/landing-page";
 
-import { useAuth } from "@/lib/auth-context";
+export const metadata: Metadata = {
+  title: "GP Sentinel | Camera Intelligence & Operational Intelligence Platform",
+  description:
+    "GP Sentinel transforms distributed camera infrastructure into real-time operational intelligence through AI vision, tracking, ANPR, event intelligence and secure evidence management.",
+  openGraph: {
+    title: "GP Sentinel | Camera Intelligence & Operational Intelligence Platform",
+    description:
+      "GP Sentinel transforms distributed camera infrastructure into real-time operational intelligence through AI vision, tracking, ANPR, event intelligence and secure evidence management.",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "GP Sentinel | Camera Intelligence & Operational Intelligence Platform",
+    description:
+      "GP Sentinel transforms distributed camera infrastructure into real-time operational intelligence.",
+  },
+};
 
 export default function RootPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (loading) return;
-    router.replace(user ? "/trace" : "/login");
-  }, [user, loading, router]);
-
-  return null;
+  return <LandingPage />;
 }

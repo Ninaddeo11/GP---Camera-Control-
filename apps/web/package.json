@@ -19,7 +19,8 @@
     "react-leaflet": "4.2.1",
     "leaflet.markercluster": "1.5.3",
     "react-leaflet-cluster": "2.1.0",
-    "clsx": "2.1.1"
+    "clsx": "2.1.1",
+    "framer-motion": "11.3.19"
   },
   "devDependencies": {
     "typescript": "5.5.4",

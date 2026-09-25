@@ -153,8 +153,20 @@ the 10-phase tracker above is unaffected by it.
 - [ ] Transformation Phase 12 — Admin module (user/role/jurisdiction CRUD
       UI — the backend RBAC exists; there's no UI to manage it yet)
 - [ ] Transformation Phase 13 — Analytics + GIS enhancements
-- [ ] Transformation Phase 14 — Public landing page (`/` as marketing, not
-      an auth redirect)
+- [x] **Transformation Phase 14 — Public landing page.** Built out of
+      sequence, at explicit request — it's self-contained frontend work
+      that doesn't depend on Phases 3-13. `/` is now a full cinematic
+      marketing site (`apps/web/components/landing/`), replacing the old
+      immediate-redirect behavior; `/login`, `/forgot-password`, and
+      `/reset-password` were reskinned to match (real functionality
+      unchanged); `/request-access` is new — an honest informational page,
+      not a fake sign-up form, since no self-service registration exists
+      in this system. Deliberately uses a different, more cinematic color
+      palette (`.landing-page` in `app/globals.css`) than the calm
+      enterprise dashboard, by design — see that file's comment for why.
+      All camera/plate/event data shown is explicitly labeled illustrative
+      demo data; nothing on the public page calls a real API. *(this
+      commit)*
 - [ ] Transformation Phase 15 — Production security hardening (SSRF,
       upload validation, secret-management review)
 - [ ] Transformation Phase 16 — Test suite (none exists yet — see
