@@ -54,7 +54,18 @@ export function LandingNav() {
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 md:flex">
+        <div className="hidden items-center gap-4 md:flex">
+          <Link
+            href={user ? "/trace" : "/login"}
+            aria-label={user ? "Search" : "Search (sign in required)"}
+            className="flex h-8 w-8 items-center justify-center rounded text-lp-text-2 transition-colors hover:text-lp-text-0"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" />
+              <path d="m20 20-3.5-3.5" strokeLinecap="round" />
+            </svg>
+          </Link>
+
           {user ? (
             <Link
               href="/trace"

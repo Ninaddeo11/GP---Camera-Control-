@@ -3,20 +3,12 @@
 import { Reveal } from "./reveal";
 
 // Factual, non-exaggerated language only — no "military-grade", "100%
-// secure", "zero false positives", or "fully compliant" claims (brief
-// section 17 / 33). Each concept maps to something actually built:
-// security/rbac.py (RBAC + jurisdiction), services/audit_service.py
-// (hash-chained audit log), services/evidence_export.py (SHA-256
-// chain-of-custody).
-const CONCEPTS = [
-  "Role-based access",
-  "Jurisdiction-aware access",
-  "Audit trails",
-  "Evidence control",
-  "Secure streaming",
-  "Data retention",
-  "Operational visibility",
-];
+// secure", "zero false positives", or "fully compliant" claims. Five
+// high-level concepts (redesign brief section 28), each mapping to
+// something actually built: security/rbac.py (identity, authorization,
+// context via jurisdiction), services/audit_service.py (audit, hash-
+// chained).
+const CONCEPTS = ["Identity", "Authorization", "Context", "Access", "Audit"];
 
 export function SecuritySection() {
   return (
@@ -24,7 +16,7 @@ export function SecuritySection() {
       <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
         <Reveal className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl font-bold tracking-tight text-lp-text-0 sm:text-5xl">
-            POWERFUL INTELLIGENCE,
+            POWERFUL INTELLIGENCE.
             <br />
             <span className="text-lp-primary-2">CONTROLLED ACCESS.</span>
           </h2>

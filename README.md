@@ -157,9 +157,13 @@ the 10-phase tracker above is unaffected by it.
       (SSRF protection on camera URLs, protected go2rtc management API)
 - [ ] Transformation Phase 6 — Vision pipeline (detector/tracker/ANPR
       abstraction interfaces, model registry)
-- [ ] Transformation Phase 7 — ANPR temporal confidence fusion (multiple
-      OCR reads across frames converging on one high-confidence plate,
-      rather than today's single-read-per-track dedup)
+- [x] **Transformation Phase 7 — ANPR temporal confidence fusion.**
+      Delivered as part of the standalone "multi-vehicle ANPR upgrade"
+      (see the Phase 5 entry above and
+      [docs/anpr-pipeline.md](docs/anpr-pipeline.md)): weighted
+      character-vote consensus across a track's buffered OCR reads
+      (`services/inference/temporal_fusion.py`), not just today's
+      single-read-per-track dedup. *(this commit)*
 - [ ] Transformation Phase 8 — Watchlists + alerts (full alert lifecycle:
       open/acknowledged/investigating/resolved/dismissed, assignment,
       escalation)
@@ -196,11 +200,38 @@ the 10-phase tracker above is unaffected by it.
       living-network map. Skipped from the V2 brief's 45 micro-specs, by
       explicit scope decision: a custom cursor, a literal hand-authored
       9-phase hero state machine, and 6 independently-tuned parallax
-      layers (built with 2 depth groups instead). *(this commit)*
+      layers (built with 2 depth groups instead).
+      **V3 exact redesign** (later commit) replaced V2's abstract SVG
+      network hero with real licensed aerial nighttime city photography
+      (Unsplash License, free commercial use — see the attribution
+      comment at the top of `hero-city-background.tsx`) as the literal
+      compositional foundation, per an explicit brief that the prior
+      abstract-network approach "must be replaced." Left-aligned
+      hero content (not centered), an 8-12s looping narrative overlay
+      (camera nodes activate → vehicle travels a real road in the photo →
+      detection box → tracking card → plate recognition panel → a red
+      watchlist alert, then back to ambient), and every "camera feed"
+      panel across the page (hero overlays, the multi-camera section) is
+      a distinct crop of that same one licensed photo via CSS
+      background-position rather than several separately-sourced stock
+      images. Consolidated three overlapping six-stage-pipeline sections
+      (V2's pixels-to-context, word-pipeline, and sticky-scroll sections)
+      into one real-photo-based "FROM VISION TO ACTION" sequence, matching
+      the new brief's leaner structure. Caught and fixed a real bug via
+      actual browser screenshots (not just `next build`): the page
+      wrapper's `overflow-x-hidden` was silently breaking
+      `position: sticky` for every descendant (it forces `overflow-y:
+      auto` too, making that div the sticky containing block instead of
+      the viewport) — confirmed by screenshotting a completely blank
+      section, fixed by scoping overflow clipping to individual
+      components instead of the page root. *(this commit)*
 - [ ] Transformation Phase 15 — Production security hardening (SSRF,
       upload validation, secret-management review)
-- [ ] Transformation Phase 16 — Test suite (none exists yet — see
-      [Known gaps](#known-gaps))
+- [ ] Transformation Phase 16 — Test suite. Partial:
+      `services/inference/tests/` (pytest, 64 tests) covers the
+      multi-vehicle ANPR upgrade's pure logic — see
+      [Known gaps](#known-gaps) for what's still uncovered (RBAC, auth,
+      API routes, frontend).
 - [ ] Transformation Phase 17 — Docker/CI-CD hardening (GitHub Actions
       pipeline; non-root containers; resource limits)
 - [ ] Transformation Phase 18 — Final integration pass
@@ -927,6 +958,16 @@ knowing about before treating this as demo-ready:
   built, access the dashboard directly at `http://localhost:3000` (bypassing
   nginx/TLS) if you need the video wall to actually connect — every other
   page works fine over HTTPS since they only talk to `api`, not go2rtc.
+- **The public landing page's hero photo is a licensed stock placeholder,
+  not owned footage.** `apps/web/public/images/hero-city-{desktop,mobile}
+  .webp` (Dubai highway interchange at night, photographer Dohyuk You, via
+  Unsplash — full attribution in `hero-city-background.tsx`'s header
+  comment). The Unsplash License permits commercial use without requiring
+  attribution, but this was a deliberate stand-in chosen by web search
+  during the V3 redesign because this environment has no image-generation
+  tool and no access to real GP Sentinel deployment footage — swap it for
+  owned or purpose-licensed photography before treating the public site as
+  production-final, if brand/provenance matters for your launch.
 - **No email delivery is configured anywhere.** `POST /auth/forgot-password`
   (Transformation Phase 2) generates a real, working reset token, but
   "sends" it by logging it server-side — readable by anyone with log

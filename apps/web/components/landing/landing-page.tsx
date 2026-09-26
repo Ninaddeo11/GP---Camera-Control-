@@ -1,21 +1,16 @@
 "use client";
 
-import { AnprSection } from "./anpr-section";
-import { CameraUnderstandsSection } from "./camera-understands-section";
 import { CapabilitiesSection } from "./capabilities-section";
+import { CameraUnderstandsSection } from "./camera-understands-section";
 import { CtaSection } from "./cta-section";
 import { EventCorrelationSection } from "./event-correlation-section";
 import { LandingFooter } from "./footer";
-import { FrameToIntelligenceSection } from "./frame-to-intelligence-section";
 import { Hero } from "./hero";
-import { LivingNetworkSection } from "./living-network-section";
 import { MultiCameraSection } from "./multi-camera-section";
 import { LandingNav } from "./nav";
-import { PipelineWordsSection } from "./pipeline-words-section";
 import { RolesSection } from "./roles-section";
 import { ScrollCameraExperienceSection } from "./scroll-camera-experience-section";
 import { SecuritySection } from "./security-section";
-import { TransitionStrip } from "./transition-strip";
 
 /**
  * The public "/" experience — see README.md "Design mandate" for why this
@@ -26,24 +21,31 @@ import { TransitionStrip } from "./transition-strip";
  * server component and export SEO metadata, which a "use client" page
  * cannot do.
  *
- * Section order follows the V2 brief's narrative arc: a camera seeing, to
- * a camera understanding, to a platform that operates on that
- * understanding — rather than the V1 structure of stats-then-features.
+ * Section order follows the "exact redesign" brief's leaner structure —
+ * real city photography carrying the hero, then a tight sequence of
+ * purposeful sections rather than the earlier, more numerous abstract-
+ * network-based sections. See each component's own docstring for what it
+ * replaced and why.
  */
 export function LandingPage() {
   return (
-    <div className="landing-page min-h-screen overflow-x-hidden">
+    // No overflow-x-hidden here: it forces `overflow-y: auto` on this div
+    // too (per the CSS overflow spec, a non-visible x with a visible y
+    // computes the y to auto), which makes THIS div the sticky containing
+    // block for every descendant instead of the viewport — silently
+    // breaking position:sticky for scroll-camera-experience-section.tsx's
+    // 600vh sticky sequence (confirmed by screenshotting it: the section
+    // rendered completely blank once scrolled into). Any section that
+    // needs horizontal clipping (e.g. a parallax layer sliding past its
+    // edge) scopes its own `overflow-hidden` locally instead — see
+    // hero-city-background.tsx.
+    <div className="landing-page min-h-screen">
       <LandingNav />
       <Hero />
-      <TransitionStrip />
       <CameraUnderstandsSection />
-      <FrameToIntelligenceSection />
       <ScrollCameraExperienceSection />
-      <PipelineWordsSection />
       <MultiCameraSection />
-      <AnprSection />
       <EventCorrelationSection />
-      <LivingNetworkSection />
       <CapabilitiesSection />
       <RolesSection />
       <SecuritySection />

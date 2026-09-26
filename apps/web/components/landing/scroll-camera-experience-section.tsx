@@ -10,7 +10,9 @@ import {
 } from "framer-motion";
 import { useRef, useState } from "react";
 
-const STAGES = ["A Moment", "Detected", "Tracked", "Recognized", "Connected", "Understood"] as const;
+import { CameraFeedThumb } from "./camera-feed-thumb";
+
+const STAGES = ["See", "Detect", "Track", "Recognize", "Connect", "Understand"] as const;
 
 interface StageWindow {
   fadeInStart: number;
@@ -31,12 +33,19 @@ function windowFor(index: number, total: number): StageWindow {
 }
 
 /**
- * A sticky, scroll-scrubbed sequence (brief section 13) — six progressively
- * richer states of the same demo camera scene, driven directly by scroll
- * position within a tall container rather than a fixed-duration animation.
- * Falls back to a simple stacked reveal (no sticky pin, no scroll-scrub)
- * under prefers-reduced-motion, since pinning the viewport for several
- * scroll-lengths is itself a strong motion effect some users want to avoid.
+ * "FROM VISION TO ACTION" (redesign brief sections 23/24) — a sticky,
+ * scroll-scrubbed sequence where ONE real camera view (a crop of the
+ * licensed hero photo, see camera-feed-thumb.tsx) progressively gains
+ * annotation layers as the user scrolls: a bounding box, a movement
+ * trail, an identity card, connections to other cameras, a final
+ * "INTELLIGENCE" label. This is deliberately real-photo-based rather
+ * than six unrelated icon cards or six separate stock photos — the brief
+ * is explicit that a real visual should carry the story and that "the
+ * same vehicle should visually continue through the stages."
+ *
+ * Falls back to a simple stacked list under prefers-reduced-motion, since
+ * pinning the viewport for several scroll-lengths is itself a strong
+ * motion effect some users want to avoid.
  */
 export function ScrollCameraExperienceSection() {
   const prefersReducedMotion = useReducedMotion();
@@ -51,9 +60,12 @@ export function ScrollCameraExperienceSection() {
 
   if (prefersReducedMotion) {
     return (
-      <section className="py-24 sm:py-28">
+      <section id="intelligence" className="py-24 sm:py-28">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-          <ol className="space-y-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.25em] text-lp-secondary">
+            From Vision to Action
+          </p>
+          <ol className="mt-8 space-y-6">
             {STAGES.map((stage, i) => (
               <li key={stage} className="flex items-center gap-4 rounded border border-lp-border bg-lp-bg-1/50 p-5">
                 <span className="font-mono text-xs text-lp-primary-2">0{i + 1}</span>
@@ -67,7 +79,7 @@ export function ScrollCameraExperienceSection() {
   }
 
   return (
-    <section ref={containerRef} className="relative h-[600vh]">
+    <section id="intelligence" ref={containerRef} className="relative h-[600vh]">
       <div className="sticky top-0 flex h-screen items-center overflow-hidden">
         <div className="mx-auto grid w-full max-w-6xl grid-cols-1 items-center gap-12 px-4 sm:px-6 lg:grid-cols-2 lg:px-8">
           <div className="relative aspect-[4/3] overflow-hidden rounded border border-lp-border bg-lp-bg-0">
@@ -77,8 +89,8 @@ export function ScrollCameraExperienceSection() {
           </div>
 
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-lp-text-2">
-              Scroll to follow one vehicle
+            <p className="text-xs font-semibold uppercase tracking-[0.25em] text-lp-secondary">
+              From Vision to Action
             </p>
             <motion.h2
               key={activeLabel}
@@ -124,59 +136,62 @@ function StageVisual({
 
   return (
     <motion.div style={{ opacity }} className="absolute inset-0">
-      <svg viewBox="0 0 400 300" className="h-full w-full" aria-hidden="true">
-        <defs>
-          <linearGradient id={`scene-sky-${stage}`} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0B1624" />
-            <stop offset="100%" stopColor="#03070D" />
-          </linearGradient>
-        </defs>
-        <rect width="400" height="300" fill={`url(#scene-sky-${stage})`} />
-        <path d="M0 220 L160 120 L240 120 L400 220 Z" fill="#0B1624" opacity="0.7" />
-        <path d="M160 300 L180 130 L220 130 L240 300 Z" fill="#07111C" />
+      <CameraFeedThumb focusX={38} focusY={58} zoom={280} className="absolute inset-0" />
+      <div className="absolute inset-0 bg-gradient-to-t from-lp-bg-00/75 via-lp-bg-00/10 to-lp-bg-00/30" />
 
-        {/* Stage 1+: bounding box */}
+      <svg viewBox="0 0 400 300" className="absolute inset-0 h-full w-full" aria-hidden="true">
+        {/* Stage 1+ (Detect): bounding box on the vehicle */}
         {stage >= 1 && (
-          <rect x="182" y="150" width="36" height="46" rx="2" fill="none" stroke="#FF4D5A" strokeWidth="1.5" />
+          <rect x="182" y="150" width="40" height="42" rx="2" fill="none" stroke="#FF4D5A" strokeWidth="1.5" />
         )}
 
-        {/* Stage 2+: movement trail */}
+        {/* Stage 2+ (Track): movement trail */}
         {stage >= 2 && (
           <path
-            d="M200 196 C 195 220, 190 240, 185 260"
+            d="M202 192 C 196 216, 190 238, 182 258"
             fill="none"
             stroke="#57BCFF"
             strokeWidth="1.5"
-            strokeDasharray="3 4"
+            strokeDasharray="3 5"
           />
         )}
 
-        {/* Stage 3+: identity card */}
+        {/* Stage 3+ (Recognize): plate/identity card */}
         {stage >= 3 && (
           <g>
-            <rect x="240" y="140" width="120" height="46" rx="3" fill="#07111C" stroke="#1688FF" strokeOpacity="0.5" />
-            <text x="250" y="158" fill="#94A3B8" fontSize="8" fontFamily="monospace">
-              IDENTITY SIGNAL
+            <rect x="236" y="140" width="118" height="42" rx="3" fill="#07111C" fillOpacity="0.85" stroke="#1688FF" strokeOpacity="0.5" />
+            <text x="246" y="157" fill="#94A3B8" fontSize="8" fontFamily="monospace">
+              PLATE SIGNAL
             </text>
-            <text x="250" y="174" fill="#FFFFFF" fontSize="10" fontFamily="monospace">
+            <text x="246" y="172" fill="#FFFFFF" fontSize="10" fontFamily="monospace">
               MH12AB1234
             </text>
           </g>
         )}
 
-        {/* Stage 4+: connected cameras */}
+        {/* Stage 4+ (Connect): links to other camera nodes */}
         {stage >= 4 && (
           <g stroke="#2EA8FF" strokeOpacity="0.6" strokeWidth="1">
-            <line x1="200" y1="173" x2="60" y2="90" />
-            <line x1="200" y1="173" x2="340" y2="240" />
-            <circle cx="60" cy="90" r="3" fill="#2EA8FF" />
-            <circle cx="340" cy="240" r="3" fill="#2EA8FF" />
+            <line x1="202" y1="171" x2="55" y2="70" />
+            <line x1="202" y1="171" x2="355" y2="230" />
+            <circle cx="55" cy="70" r="4" fill="#0B1624" stroke="#2EA8FF" strokeWidth="1.5" />
+            <circle cx="355" cy="230" r="4" fill="#0B1624" stroke="#2EA8FF" strokeWidth="1.5" />
           </g>
         )}
-
-        {/* Stage 5: full context glow */}
-        {stage >= 5 && <rect width="400" height="300" fill="#1688FF" opacity="0.06" />}
       </svg>
+
+      {/* Stage 5 (Understand): full context label — pinned to the bottom
+          edge, not centered, so it never overlaps the plate/identity card
+          from stage 3 which is still shown cumulatively at this point. */}
+      {stage >= 5 && (
+        <div className="absolute inset-0 bg-lp-primary/10">
+          <div className="absolute inset-x-0 bottom-4 flex justify-center">
+            <span className="rounded-full border border-lp-primary/40 bg-lp-bg-0/85 px-5 py-2 text-xs font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-sm">
+              Intelligence
+            </span>
+          </div>
+        </div>
+      )}
     </motion.div>
   );
 }

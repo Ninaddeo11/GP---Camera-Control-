@@ -3,15 +3,20 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useState } from "react";
 
+import { CameraFeedThumb } from "./camera-feed-thumb";
 import { Reveal } from "./reveal";
 
+// Positions in a 400x260 coordinate space (percent-converted below for the
+// HTML camera panels, used directly for the SVG path/dot).
 const CAMERAS = [
-  { id: "CAM-A", x: 60, y: 60 },
-  { id: "CAM-B", x: 340, y: 90 },
-  { id: "CAM-C", x: 200, y: 220 },
+  { id: "CAM-A", x: 60, y: 60, focusX: 15, focusY: 70 },
+  { id: "CAM-B", x: 340, y: 90, focusX: 60, focusY: 25 },
+  { id: "CAM-C", x: 200, y: 220, focusX: 85, focusY: 55 },
 ] as const;
 
 const PATH = "M 60 60 C 150 40, 260 40, 340 90 C 320 160, 260 210, 200 220";
+const VIEW_W = 400;
+const VIEW_H = 260;
 
 export function MultiCameraSection() {
   const prefersReducedMotion = useReducedMotion();
@@ -30,22 +35,22 @@ export function MultiCameraSection() {
           <h2 className="text-3xl font-bold tracking-tight text-lp-text-0 sm:text-5xl">
             ONE MOVEMENT.
             <br />
-            MULTIPLE VIEWS.
-            <br />
-            <span className="text-lp-primary-2">ONE CONTINUOUS STORY.</span>
+            <span className="text-lp-primary-2">MULTIPLE VIEWS.</span>
           </h2>
         </Reveal>
 
         <Reveal delay={0.1}>
-          <div className="mx-auto mt-14 max-w-2xl overflow-hidden rounded border border-lp-border bg-lp-bg-0 p-6">
-            <svg viewBox="0 0 400 260" className="h-auto w-full" aria-hidden="true">
+          <div className="relative mx-auto mt-14 aspect-[400/260] max-w-2xl overflow-visible rounded border border-lp-border bg-lp-bg-0">
+            <svg
+              viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
+              className="absolute inset-0 h-full w-full"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
               <path d={PATH} fill="none" stroke="rgb(30 58 95)" strokeWidth="2" strokeDasharray="4 6" />
-              {/* CSS Motion Path (offset-path/offset-distance) — genuinely
-                  the right tool for following a curved SVG path, supported
-                  in all current major browsers (Safari since 16). On an
-                  older browser that ignores it, the dot simply stays put
-                  rather than erroring — a graceful, if less impressive,
-                  degradation. */}
+              {/* CSS Motion Path is genuinely the right tool for following a
+                  curved SVG path; degrades gracefully (dot stays put) on a
+                  browser too old to support offset-path. */}
               {!prefersReducedMotion && (
                 <motion.circle
                   r="4"
@@ -55,43 +60,37 @@ export function MultiCameraSection() {
                   style={{ offsetPath: `path('${PATH}')` }}
                 />
               )}
-              {CAMERAS.map((cam, i) => {
-                const isActive = i === activeCamera;
-                return (
-                  <g key={cam.id}>
-                    <circle
-                      cx={cam.x}
-                      cy={cam.y}
-                      r={isActive ? 16 : 11}
-                      fill="rgb(22 136 255)"
-                      opacity={isActive ? 0.18 : 0.08}
-                    />
-                    <circle cx={cam.x} cy={cam.y} r={isActive ? 5 : 3.5} fill={isActive ? "rgb(87 188 255)" : "rgb(46 168 255)"} />
-                    <text
-                      x={cam.x}
-                      y={cam.y - 22}
-                      fill={isActive ? "#FFFFFF" : "rgb(148 163 184)"}
-                      fontSize="11"
-                      fontFamily="monospace"
-                      textAnchor="middle"
-                    >
-                      {cam.id}
-                    </text>
-                  </g>
-                );
-              })}
             </svg>
 
-            <div className="mt-4 flex justify-center gap-2">
-              {CAMERAS.map((cam, i) => (
-                <span
+            {CAMERAS.map((cam, i) => {
+              const isActive = i === activeCamera;
+              const leftPct = (cam.x / VIEW_W) * 100;
+              const topPct = (cam.y / VIEW_H) * 100;
+              return (
+                <div
                   key={cam.id}
-                  className={`h-1.5 w-8 rounded-full transition-colors duration-300 ${
-                    activeCamera === i ? "bg-lp-primary-2" : "bg-lp-border"
-                  }`}
-                />
-              ))}
-            </div>
+                  className="absolute -translate-x-1/2 -translate-y-1/2"
+                  style={{ left: `${leftPct}%`, top: `${topPct}%` }}
+                >
+                  <div
+                    className={`w-24 overflow-hidden rounded border bg-lp-bg-0/90 backdrop-blur-sm transition-all duration-300 sm:w-28 ${
+                      isActive ? "border-lp-primary-2 shadow-[0_0_24px_-6px_rgba(46,168,255,0.6)]" : "border-lp-border"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between px-1.5 py-1 text-[8px] font-semibold uppercase tracking-wider text-lp-text-1">
+                      <span>{cam.id}</span>
+                      {isActive && <span className="h-1 w-1 rounded-full bg-lp-success lp-node-pulse" />}
+                    </div>
+                    <CameraFeedThumb
+                      focusX={cam.focusX}
+                      focusY={cam.focusY}
+                      zoom={320}
+                      className="h-12 w-full sm:h-14"
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </Reveal>
       </div>
