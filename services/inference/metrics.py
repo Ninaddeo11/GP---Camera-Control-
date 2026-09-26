@@ -54,3 +54,18 @@ ACTIVE_CAMERAS = Gauge(
     "sentinelgrid_inference_active_cameras",
     "Number of cameras this inference worker is currently processing",
 )
+PLATE_OBSERVATIONS_TOTAL = Counter(
+    "sentinelgrid_plate_observations_total",
+    "Individual OCR reads recorded into a track's temporal fusion buffer (before dedup/publish gating)",
+    ["camera_id"],
+)
+VEHICLE_CLASSIFICATIONS_TOTAL = Counter(
+    "sentinelgrid_vehicle_classifications_total",
+    "Tracks that received a manufacturer and/or model classification result",
+    ["camera_id"],
+)
+VEHICLE_EVENTS_FINALIZED_TOTAL = Counter(
+    "sentinelgrid_vehicle_events_finalized_total",
+    "Vehicle tracks finalized and published as one consolidated VehicleEvent",
+    ["camera_id"],
+)

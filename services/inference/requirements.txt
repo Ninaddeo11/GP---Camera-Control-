@@ -13,3 +13,9 @@ numpy<2.0
 # ocr_engine.py module docstring for why it stays off the GPU.
 paddlepaddle==2.6.1
 paddleocr==2.7.3
+
+# ANPR multi-vehicle upgrade — secondary/fallback OCR engine, only invoked
+# when PaddleOCR is uncertain (see ocr_fallback.py). CPU-only for the same
+# reason as PaddleOCR above; reuses the torch install already provided by
+# the base image rather than pulling in its own.
+easyocr==1.7.1

@@ -31,6 +31,10 @@ PLATE_EVENTS_PERSISTED_TOTAL = Counter(
     "sentinelgrid_plate_events_persisted_total",
     "Plate events persisted by services/plate_event_consumer.py",
 )
+VEHICLE_EVENTS_PERSISTED_TOTAL = Counter(
+    "sentinelgrid_vehicle_events_persisted_total",
+    "Finalized vehicle events persisted by services/vehicle_event_consumer.py",
+)
 
 
 class MetricsMiddleware(BaseHTTPMiddleware):

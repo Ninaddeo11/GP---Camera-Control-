@@ -12,7 +12,7 @@ import time
 import redis
 
 import config
-from events import PlateEvent, TrackedObject
+from events import PlateEvent, TrackedObject, VehicleEvent
 
 log = logging.getLogger("inference.event_publisher")
 
@@ -72,6 +72,41 @@ class EventPublisher:
         except redis.RedisError:
             log.exception(
                 "Failed to publish plate event for camera=%s track=%s",
+                event.camera_id,
+                event.track_id,
+            )
+
+    def publish_vehicle_event(self, event: VehicleEvent) -> None:
+        fields = {
+            "camera_id": event.camera_id,
+            "track_id": str(event.track_id),
+            "first_seen_wall_ts_ms": f"{event.first_seen_wall_ts_ms:.1f}",
+            "last_seen_wall_ts_ms": f"{event.last_seen_wall_ts_ms:.1f}",
+            "vehicle_type": event.vehicle_type,
+            "vehicle_type_observations": str(event.vehicle_type_observations),
+            "plate_text": event.plate_text,
+            "plate_confidence": f"{event.plate_confidence:.4f}",
+            "plate_region": event.plate_region,
+            "plate_valid": "1" if event.plate_valid else "0",
+            "plate_observations": str(event.plate_observations),
+            "plate_agreement": f"{event.plate_agreement:.4f}",
+            "manufacturer": event.manufacturer,
+            "manufacturer_confidence": f"{event.manufacturer_confidence:.4f}",
+            "model": event.model,
+            "model_confidence": f"{event.model_confidence:.4f}",
+            "best_vehicle_image_path": event.best_vehicle_image_path,
+            "best_plate_image_path": event.best_plate_image_path,
+        }
+        try:
+            self._redis.xadd(
+                config.REDIS_STREAM_VEHICLE_EVENTS,
+                fields,
+                maxlen=config.REDIS_STREAM_MAXLEN,
+                approximate=True,
+            )
+        except redis.RedisError:
+            log.exception(
+                "Failed to publish vehicle event for camera=%s track=%s",
                 event.camera_id,
                 event.track_id,
             )

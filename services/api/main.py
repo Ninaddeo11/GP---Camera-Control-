@@ -2,11 +2,11 @@
 
 Beyond serving HTTP, this process also runs the Redis Streams consumers
 that turn services/inference's published events into persisted rows/live
-pushes (plate_event_consumer for Phase 6, watchlist_engine +
-alert_dispatcher for Phase 7) — background asyncio tasks started in the
-lifespan below, not separate containers. One process is simpler to
-operate at this scale and keeps the write path next to the read path that
-depends on it.
+pushes (plate_event_consumer for Phase 6, vehicle_event_consumer for the
+multi-vehicle ANPR upgrade, watchlist_engine + alert_dispatcher for Phase
+7) — background asyncio tasks started in the lifespan below, not separate
+containers. One process is simpler to operate at this scale and keeps the
+write path next to the read path that depends on it.
 """
 
 from __future__ import annotations
@@ -27,7 +27,7 @@ from api import admin, alerts, audit, auth, cameras, evidence, tracking, watchli
 from config import settings
 from metrics import MetricsMiddleware, metrics_endpoint
 from security.rate_limit import GeneralRateLimitMiddleware
-from services import plate_event_consumer, watchlist_engine
+from services import plate_event_consumer, vehicle_event_consumer, watchlist_engine
 
 logging.basicConfig(
     level=settings.log_level,
@@ -43,6 +43,7 @@ _background_tasks: list[asyncio.Task] = []
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     _background_tasks.append(asyncio.create_task(plate_event_consumer.run(_background_stop)))
+    _background_tasks.append(asyncio.create_task(vehicle_event_consumer.run(_background_stop)))
     _background_tasks.append(asyncio.create_task(watchlist_engine.run(_background_stop)))
     log.info("Background consumers started")
     yield

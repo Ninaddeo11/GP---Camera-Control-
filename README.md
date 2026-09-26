@@ -72,6 +72,23 @@ until it's actually runnable and verified.
       per track, into a new `plate_events` Redis Stream. *(this commit —
       **no fine-tuned plate model ships in this repo**; ANPR cleanly
       disables itself until one is provided — see "ANPR model gap" below)*
+      **Multi-vehicle ANPR upgrade** (later commit): plate-crop quality
+      gating + enhancement (blur/size/contrast, CLAHE, sharpening) before
+      OCR; a secondary OCR engine (EasyOCR) invoked only when PaddleOCR is
+      uncertain; weighted multi-frame temporal OCR fusion per track
+      (character-vote consensus, not "trust the latest read"); BH-series
+      plate format support; a full per-track lifecycle
+      (`track_state.py`: NEW→ACTIVE→...→FINALIZED) with a bounded
+      observation buffer and best-evidence-frame selection; optional
+      manufacturer/model classification enrichment (interfaces + config
+      only — no fine-tuned classifier ships, same gap as the plate
+      detector); and a new `vehicle_events` Redis Stream + Postgres table +
+      `GET /tracking/vehicle-events/recent`, one consolidated event per
+      finalized track, alongside the existing per-read `plate_events`. See
+      [docs/anpr-pipeline.md](docs/anpr-pipeline.md) for the full pipeline
+      and `services/inference/tests/` for the (synthetic-data, no-GPU)
+      test suite this upgrade added — the first tests anywhere in this
+      repo.
 - [x] **Phase 6 — Vehicle tracking query service + UI.** `services/api`:
       a Redis Streams consumer persists `plate_events` into Postgres;
       `GET /tracking/plate/{plate}` reconstructs a jurisdiction-scoped
@@ -240,6 +257,24 @@ shape is clearer, rather than rushed here.
   PyTorch CUDA build already in the same container (see `ocr_engine.py`).
   This hasn't been installed/run anywhere real yet — if the pip install
   fails or conflicts on your machine, that's the first thing to check.
+- **Manufacturer/model classifier gap (same shape as the ANPR model gap
+  above):** `services/inference/vehicle_classifier.py`'s
+  `ManufacturerClassifier`/`ModelClassifier` check for weights at
+  `MANUFACTURER_MODEL_PATH`/`VEHICLE_MODEL_CLASSIFIER_PATH` and report
+  themselves unavailable (never a fabricated label) if missing — no
+  fine-tuned classifier ships in this repo, same training-data
+  unavailability reason as the plate detector. Vehicle *type*
+  (car/truck/bus/motorcycle) is unaffected — it comes from the YOLO
+  detector, not this classifier. The `MakeModel-VLM-450M` adapter is
+  further behind: even with a local model directory present, its actual
+  inference call isn't implemented (see that class's docstring) — nothing
+  in this environment can verify a real call against it. See
+  [docs/anpr-pipeline.md](docs/anpr-pipeline.md) for what's needed to
+  activate each one.
+- **EasyOCR dependency risk (same shape as the PaddleOCR risk above):**
+  `services/inference/requirements.txt` adds `easyocr==1.7.1` as the
+  secondary OCR engine (`ocr_fallback.py`), CPU-only, reusing the torch
+  install already present. Not installed/run anywhere real yet either.
 
 ## Architecture
 
@@ -913,25 +948,42 @@ knowing about before treating this as demo-ready:
   asks for are not, because nothing has run. Run it against a live
   50-camera deployment before quoting any number in the hackathon
   write-up — don't substitute a guess.
-- **No automated tests.** Everything in this repo has been reviewed by
-  hand (including catching and fixing several real bugs along the way —
-  a jurisdiction-escape in camera reassignment, a dedup-ordering bug in
-  ANPR republishing, an unreachable-branch in RBAC's unassigned-camera
-  handling), but there's no pytest suite. For a hackathon PoC this is a
-  defensible trade-off given the time available; it would not be for
-  anything beyond that.
+- **Automated tests exist for exactly one corner: the multi-vehicle ANPR
+  upgrade's pure logic.** `services/inference/tests/` (pytest) covers
+  temporal fusion, plate normalization, track lifecycle, quality scoring,
+  and classifier confidence-arbitration — see
+  [docs/anpr-pipeline.md](docs/anpr-pipeline.md#testing) for exactly what
+  is and isn't covered (no real footage/model weights exist in this
+  sandbox, so nothing exercises the actual YOLO/OCR models). Everything
+  else in this repo — RBAC, auth, the API routes, the frontend — has been
+  reviewed by hand only (including catching and fixing several real bugs
+  along the way — a jurisdiction-escape in camera reassignment, a
+  dedup-ordering bug in ANPR republishing, an unreachable-branch in RBAC's
+  unassigned-camera handling), with no pytest suite. For a hackathon PoC
+  this is a defensible trade-off given the time available; it would not be
+  for anything beyond that.
 
 ## Coming up (beyond the 10 phases)
 
 - Fine-tune and ship an actual Indian-plate YOLO11 model (Phase 5's gap).
+- Fine-tune and ship manufacturer/model classifiers, and implement the
+  MakeModel-VLM-450M adapter's real inference call (see "Manufacturer/
+  model classifier gap" above and docs/anpr-pipeline.md).
+- Verify the multi-vehicle ANPR upgrade against a real GPU + live/recorded
+  RTSP feed and fill in docs/anpr-pipeline.md's performance report with
+  real numbers — nothing in it right now is measured, by design (no
+  Docker/GPU/camera feed available in this sandbox).
 - Close the go2rtc authentication gap (above).
 - Wire live camera status back into the registry (above).
 - Run `scripts/benchmark.py` against a real 50-camera deployment and put
   the actual numbers — not a methodology — in the hackathon write-up.
-- Add a test suite, starting with the RBAC policy surface
-  (`security/rbac.py`) and the audit hash chain
-  (`services/audit_service.py`), since those are the two places a subtle
-  bug would be worst.
+- Extend automated test coverage beyond the multi-vehicle ANPR upgrade,
+  starting with the RBAC policy surface (`security/rbac.py`) and the audit
+  hash chain (`services/audit_service.py`), since those are the two places
+  a subtle bug would be worst.
+- Wire `services/api/scripts/cleanup_expired_evidence.py` into an actual
+  cron schedule (it exists and works standalone, but nothing invokes it
+  automatically yet).
 
 ## License
 

@@ -67,12 +67,73 @@ ANPR_SKIP_RERUN_ABOVE_CONFIDENCE = _float("ANPR_SKIP_RERUN_ABOVE_CONFIDENCE", 0.
 # near-duplicate of what's already in the stream.
 ANPR_REPUBLISH_MARGIN = _float("ANPR_REPUBLISH_MARGIN", 0.05)
 
+# -- Plate quality pipeline (multi-vehicle ANPR upgrade) --------------------------
+# Laplacian-variance floor below which a plate crop is treated as too
+# blurry to bother OCRing at all (see plate_quality.assess).
+PLATE_QUALITY_MIN_SHARPNESS = _float("PLATE_QUALITY_MIN_SHARPNESS", 0.08)
+# Raw Laplacian-variance value treated as "as sharp as this needs scoring
+# for" — purely a normalization constant for the 0-1 sharpness score, not
+# a hard cutoff.
+PLATE_QUALITY_SHARPNESS_CEILING = _float("PLATE_QUALITY_SHARPNESS_CEILING", 400.0)
+PLATE_QUALITY_SIZE_CEILING_MULTIPLIER = _float("PLATE_QUALITY_SIZE_CEILING_MULTIPLIER", 3.0)
+PLATE_QUALITY_CONTRAST_CEILING = _float("PLATE_QUALITY_CONTRAST_CEILING", 60.0)
+PLATE_QUALITY_ENABLE_CLAHE = os.environ.get("PLATE_QUALITY_ENABLE_CLAHE", "true").lower() == "true"
+PLATE_QUALITY_ENABLE_SHARPEN = os.environ.get("PLATE_QUALITY_ENABLE_SHARPEN", "true").lower() == "true"
+PLATE_QUALITY_ENABLE_DENOISE = os.environ.get("PLATE_QUALITY_ENABLE_DENOISE", "false").lower() == "true"
+# Upscale small-but-usable crops before OCR; 1.0 disables upscaling.
+PLATE_QUALITY_UPSCALE_MAX_FACTOR = _float("PLATE_QUALITY_UPSCALE_MAX_FACTOR", 2.0)
+
+# -- Secondary OCR (multi-vehicle ANPR upgrade) -----------------------------------
+# Only invoked when the primary (PaddleOCR) read's confidence falls in the
+# uncertain band below this value — never run on every crop (brief section
+# 10: "Do NOT run both OCR engines on every plate crop").
+OCR_SECONDARY_TRIGGER_BELOW_CONFIDENCE = _float("OCR_SECONDARY_TRIGGER_BELOW_CONFIDENCE", 0.75)
+OCR_SECONDARY_ENABLED = os.environ.get("OCR_SECONDARY_ENABLED", "true").lower() == "true"
+
+# -- Temporal OCR fusion (multi-vehicle ANPR upgrade) -----------------------------
+# Bounded per-track observation buffer — old reads age out automatically
+# rather than being retained forever (brief section 12: "Do not store
+# every OCR observation permanently").
+TEMPORAL_FUSION_MAX_OBSERVATIONS = _int("TEMPORAL_FUSION_MAX_OBSERVATIONS", 20)
+# 1 preserves today's behavior (a single confident read is enough to
+# publish); raise this to require corroborating reads before a track's
+# plate is considered fused/confirmed.
+TEMPORAL_FUSION_MIN_OBSERVATIONS_FOR_PUBLISH = _int("TEMPORAL_FUSION_MIN_OBSERVATIONS_FOR_PUBLISH", 1)
+
+# -- Track lifecycle (multi-vehicle ANPR upgrade) ---------------------------------
+# Consecutive frames a previously-confirmed track can be absent from
+# ByteTrack's output before this service finalizes it as LOST — absorbs
+# normal single-frame tracking flicker without prematurely closing out a
+# vehicle that's still in view.
+TRACK_LOST_GRACE_FRAMES = _int("TRACK_LOST_GRACE_FRAMES", 10)
+
+# -- Vehicle classification enrichment (multi-vehicle ANPR upgrade) --------------
+# No fine-tuned manufacturer/model classifier ships in this repo — see
+# vehicle_classifier.py's module docstring. These paths follow the exact
+# same "check for the file, disable cleanly if absent" convention as
+# PLATE_MODEL_PATH above.
+ENABLE_VEHICLE_CLASSIFICATION = os.environ.get("ENABLE_VEHICLE_CLASSIFICATION", "true").lower() == "true"
+MANUFACTURER_MODEL_PATH = os.environ.get("MANUFACTURER_MODEL_PATH", "models/manufacturer-classifier.pt")
+VEHICLE_MODEL_CLASSIFIER_PATH = os.environ.get("VEHICLE_MODEL_CLASSIFIER_PATH", "models/vehicle-model-classifier.pt")
+MAKEMODEL_VLM_PATH = os.environ.get("MAKEMODEL_VLM_PATH", "models/makemodel-vlm-450m")
+CLASSIFIER_HIGH_CONFIDENCE_THRESHOLD = _float("CLASSIFIER_HIGH_CONFIDENCE_THRESHOLD", 0.85)
+CLASSIFIER_PROBABLE_CONFIDENCE_THRESHOLD = _float("CLASSIFIER_PROBABLE_CONFIDENCE_THRESHOLD", 0.60)
+# Classification only runs on a track's single best-quality vehicle crop
+# (updated as better frames arrive), never every frame — brief section 16:
+# "Manufacturer: 1-3 best vehicle crops".
+CLASSIFICATION_MIN_FRAMES_BEFORE_ATTEMPT = _int("CLASSIFICATION_MIN_FRAMES_BEFORE_ATTEMPT", 3)
+
 # -- Redis / event bus --------------------------------------------------------------
 REDIS_URL = os.environ.get("REDIS_URL", "redis://redis:6379/0")
 REDIS_STREAM_DETECTIONS = os.environ.get("REDIS_STREAM_DETECTIONS", "detections")
 REDIS_STREAM_PLATE_EVENTS = os.environ.get("REDIS_STREAM_PLATE_EVENTS", "plate_events")
+REDIS_STREAM_VEHICLE_EVENTS = os.environ.get("REDIS_STREAM_VEHICLE_EVENTS", "vehicle_events")
 REDIS_STREAM_CAMERA_HEALTH = os.environ.get("REDIS_STREAM_CAMERA_HEALTH", "camera_health")
 REDIS_STREAM_MAXLEN = _int("REDIS_STREAM_MAXLEN", 500_000)
+
+# -- Evidence storage (multi-vehicle ANPR upgrade) --------------------------------
+EVIDENCE_SAVE_BEST_VEHICLE_FRAME = os.environ.get("EVIDENCE_SAVE_BEST_VEHICLE_FRAME", "true").lower() == "true"
+EVIDENCE_SAVE_BEST_PLATE_CROP = os.environ.get("EVIDENCE_SAVE_BEST_PLATE_CROP", "true").lower() == "true"
 
 # -- Misc --------------------------------------------------------------------------
 SNAPSHOT_DIR = os.environ.get("SNAPSHOT_DIR", "/data/snapshots")

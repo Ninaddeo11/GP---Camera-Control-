@@ -20,7 +20,13 @@ class Settings(BaseSettings):
     # -- Redis (token blacklist, rate limiting, Phase 4+ event bus) --------
     redis_url: str = "redis://redis:6379/0"
     redis_stream_plate_events: str = "plate_events"
+    redis_stream_vehicle_events: str = "vehicle_events"
     redis_stream_watchlist_matches: str = "watchlist_matches"
+
+    # -- Evidence retention (multi-vehicle ANPR upgrade) --------------------
+    # Consumed by scripts/cleanup_expired_evidence.py, not enforced
+    # automatically by this process — see that script's docstring for why.
+    evidence_retention_days: int = 30
 
     # -- JWT ---------------------------------------------------------------
     jwt_secret_key: str = "change-me-super-secret-key"
