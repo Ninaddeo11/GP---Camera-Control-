@@ -86,6 +86,15 @@ JURISDICTIONS = [
     ("DEPT-GSRTC", "GSRTC", "department", "GJ-STATE"),
 ]
 
+# A standing super-admin account, distinct from the nine demo/tour
+# accounts below: T1 ("# full access" in ROLE_PERMISSIONS above — every
+# permission including user:manage) with a statewide jurisdiction grant,
+# so it can see and manage everything. Uses its own password, set via
+# SUPER_ADMIN_PASSWORD below, not the shared DEMO_PASSWORD every other
+# seeded account uses.
+SUPER_ADMIN_USERNAME = "ninaddeo11@gmail.com"
+SUPER_ADMIN_PASSWORD = os.environ.get("SUPER_ADMIN_PASSWORD", "2401106096")
+
 # (username, full_name, badge_number, role_code, department, [jurisdiction_codes])
 USERS = [
     ("dgp.shah", "A. Shah", "DGP-001", "T1", "State Command", ["GJ-STATE"]),
@@ -135,6 +144,44 @@ async def _get_or_create_jurisdiction(
     return j
 
 
+async def _get_or_create_user(
+    db,
+    username: str,
+    password_hash: str,
+    full_name: str,
+    badge: str | None,
+    department: str | None,
+    role_id,
+    jurisdictions_by_code: dict[str, Jurisdiction],
+    jur_codes: list[str],
+) -> User:
+    user = (await db.execute(select(User).where(User.username == username))).scalar_one_or_none()
+    if user is None:
+        user = User(
+            username=username,
+            password_hash=password_hash,
+            full_name=full_name,
+            badge_number=badge,
+            department=department,
+            role_id=role_id,
+        )
+        db.add(user)
+        await db.flush()
+
+    existing_grants = {
+        ug.jurisdiction_id
+        for ug in (
+            await db.execute(select(UserJurisdiction).where(UserJurisdiction.user_id == user.id))
+        ).scalars().all()
+    }
+    for jur_code in jur_codes:
+        jurisdiction = jurisdictions_by_code[jur_code]
+        if jurisdiction.id not in existing_grants:
+            db.add(UserJurisdiction(user_id=user.id, jurisdiction_id=jurisdiction.id))
+
+    return user
+
+
 async def seed() -> None:
     async with AsyncSessionLocal() as db:
         roles_by_code = {
@@ -168,36 +215,30 @@ async def seed() -> None:
 
         password_hash = hash_password(DEMO_PASSWORD)
         for username, full_name, badge, role_code, department, jur_codes in USERS:
-            user = (
-                await db.execute(select(User).where(User.username == username))
-            ).scalar_one_or_none()
-            if user is None:
-                user = User(
-                    username=username,
-                    password_hash=password_hash,
-                    full_name=full_name,
-                    badge_number=badge,
-                    department=department,
-                    role_id=roles_by_code[role_code].id,
-                )
-                db.add(user)
-                await db.flush()
+            await _get_or_create_user(
+                db, username, password_hash, full_name, badge, department,
+                roles_by_code[role_code].id, jurisdictions_by_code, jur_codes,
+            )
 
-            existing_grants = {
-                ug.jurisdiction_id
-                for ug in (
-                    await db.execute(select(UserJurisdiction).where(UserJurisdiction.user_id == user.id))
-                ).scalars().all()
-            }
-            for jur_code in jur_codes:
-                jurisdiction = jurisdictions_by_code[jur_code]
-                if jurisdiction.id not in existing_grants:
-                    db.add(UserJurisdiction(user_id=user.id, jurisdiction_id=jurisdiction.id))
+        # Standing super-admin — own password, T1 (full access, every
+        # permission including user:manage), statewide jurisdiction grant.
+        await _get_or_create_user(
+            db,
+            SUPER_ADMIN_USERNAME,
+            hash_password(SUPER_ADMIN_PASSWORD),
+            "Super Admin",
+            None,
+            "State Command",
+            roles_by_code["T1"].id,
+            jurisdictions_by_code,
+            ["GJ-STATE"],
+        )
 
         await db.commit()
 
-    print(f"Seed complete. {len(USERS)} test users created/verified.")
+    print(f"Seed complete. {len(USERS)} test users created/verified, plus 1 super-admin account.")
     print(f"Demo password for every seeded account: {DEMO_PASSWORD}")
+    print(f"Super-admin login: {SUPER_ADMIN_USERNAME}")
     print("Rotate or remove these accounts before any real deployment.")
 
 
