@@ -1,4 +1,4 @@
-"""Read-only view onto the immutable audit log (see models/audit.py and
+"""Read-only view onto the immutable audit log (see from services.api.models import *
 services/audit_service.py for how it's written and hash-chained).
 `audit_log:read` is T1-T3 only, per scripts/seed_users.py — deliberately
 excluding T9 (infra admin, no investigative data by default).
@@ -13,11 +13,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db
-from models.audit import AuditLogEntry
-from models.rbac import User
+from services.api.models import AuditLogEntry    
+from services.api.models import User
 from schemas.audit import AuditChainVerification, AuditLogEntryOut
 from security.rbac import require_permission
-from services import audit_service
+from services.api.services import audit_service
 
 router = APIRouter(prefix="/admin/audit-log", tags=["audit"])
 

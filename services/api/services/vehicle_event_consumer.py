@@ -20,7 +20,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from config import settings
 from database import AsyncSessionLocal
 from metrics import VEHICLE_EVENTS_PERSISTED_TOTAL
-from models.vehicle_event import VehicleEventRecord
+from services.api.models import VehicleEventRecord
 
 log = logging.getLogger("api.vehicle_event_consumer")
 

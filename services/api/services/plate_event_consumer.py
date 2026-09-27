@@ -21,7 +21,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from config import settings
 from database import AsyncSessionLocal
 from metrics import PLATE_EVENTS_PERSISTED_TOTAL
-from models.plate_event import PlateEventRecord
+from services.api.models import PlateEventRecord
 
 log = logging.getLogger("api.plate_event_consumer")
 

@@ -22,7 +22,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.audit import AuditLogEntry
+from services.api.models import AuditLogEntry
 
 GENESIS_HASH = "0" * 64
 

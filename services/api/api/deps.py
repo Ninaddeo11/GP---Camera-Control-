@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from database import get_db as get_db  # re-exported for convenience
-from models.rbac import User
+from services.api.models import *
 from security.jwt import InvalidTokenError, TokenType, decode_token
 
 _bearer_scheme = HTTPBearer(auto_error=False)

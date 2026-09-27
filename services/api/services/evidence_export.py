@@ -25,11 +25,11 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.camera import Camera
-from models.evidence_export import EvidenceExport
-from models.plate_event import PlateEventRecord
-from models.rbac import User
-from services import vehicle_trace
+from services.api.models import Camera
+from services.api.models import EvidenceExport
+from services.api.models import PlateEventRecord
+from services.api.models import User
+from services.api.services import vehicle_trace
 from services.jurisdiction_service import get_user_scope_jurisdiction_ids
 
 EXPORT_DIR = Path("/data/exports")

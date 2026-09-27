@@ -19,11 +19,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from geoalchemy2.shape import to_shape
-from models.camera import Camera
-from models.plate_event import PlateEventRecord
-from models.rbac import User
+from services.api.models import Camera
+from services.api.models import PlateEventRecord
+from services.api.models import User
 from schemas.tracking import CameraStop, RouteFeature, RouteGeoJSON, TraversalResult
-from services import geo, media
+from services.api.services import geo, media
 from services.jurisdiction_service import get_user_scope_jurisdiction_ids
 
 FUZZY_MATCH_THRESHOLD = 90.0

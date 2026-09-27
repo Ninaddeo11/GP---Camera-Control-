@@ -17,12 +17,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db
-from models.evidence_export import EvidenceExport
-from models.rbac import User
+from services.api.models import EvidenceExport, User
 from schemas.evidence import EvidenceExportRequest, EvidenceExportResult
 from security.rate_limit import rate_limit
 from security.rbac import require_permission
-from services import evidence_export
+from services.api.services import evidence_export
 
 router = APIRouter(prefix="/evidence", tags=["evidence"])
 

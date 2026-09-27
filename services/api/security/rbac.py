@@ -28,8 +28,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, get_db
-from models.rbac import Permission, Role, User
-from services import audit_service
+from services.api.models import Permission, Role, User
+from services.api.services import audit_service
 from services.jurisdiction_service import is_in_jurisdiction
 
 
