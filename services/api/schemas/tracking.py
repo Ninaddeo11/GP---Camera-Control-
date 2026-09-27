@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class CameraStop(BaseModel):
@@ -50,6 +50,12 @@ class VehicleEventOut(BaseModel):
     consolidated vehicle type/manufacturer/model plus the best fused plate
     read, distinct from RecentDetectionOut's per-publish plate_events rows.
     """
+
+    # `model`/`model_confidence` collide with pydantic's own reserved
+    # "model_" attribute namespace (model_config, model_fields, ...) —
+    # this is real API vocabulary (vehicle model), not a naming accident,
+    # so silence the warning rather than rename the field.
+    model_config = ConfigDict(protected_namespaces=())
 
     id: uuid.UUID
     camera_id: str

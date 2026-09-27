@@ -151,7 +151,10 @@ async def refresh(
     return _issue_tokens(user)
 
 
-@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT)
+# response_model=None: see api/admin.py's revoke_sessions comment — a bare
+# `-> None` return annotation resolves to the truthy NoneType class, which
+# trips FastAPI's 204-must-not-have-a-body assertion at import time.
+@router.post("/logout", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def logout(payload: RefreshRequest) -> None:
     try:
         token_payload = decode_token(payload.refresh_token, TokenType.REFRESH)
@@ -200,7 +203,10 @@ async def forgot_password(payload: ForgotPasswordRequest, db: AsyncSession = Dep
     return response
 
 
-@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT)
+# response_model=None: see api/admin.py's revoke_sessions comment — a bare
+# `-> None` return annotation resolves to the truthy NoneType class, which
+# trips FastAPI's 204-must-not-have-a-body assertion at import time.
+@router.post("/reset-password", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def reset_password(payload: ResetPasswordRequest, db: AsyncSession = Depends(get_db)) -> None:
     try:
         token_payload = decode_token(payload.reset_token, TokenType.RESET)

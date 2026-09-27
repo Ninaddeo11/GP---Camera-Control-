@@ -11,8 +11,11 @@ Redis and letting the real consumers process it is what actually
 demonstrates the pipeline works, not just that the query side does.
 
 Run inside the api container (needs its network access to redis/postgres
-and its dependencies):
-    docker compose exec api python scripts/demo.py [--plate GJ01AB1234]
+and its dependencies) as a module, not a direct script path — the
+container's working directory is /app, and `python scripts/demo.py` puts
+/app/scripts (not /app) at sys.path[0], so `from config import settings`
+below fails with ModuleNotFoundError:
+    docker compose exec api python -m scripts.demo [--plate GJ01AB1234]
 """
 
 from __future__ import annotations

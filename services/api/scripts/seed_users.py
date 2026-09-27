@@ -5,8 +5,12 @@ show RBAC by simply logging in as different accounts.
 
 Idempotent — safe to re-run (get-or-create on code/username everywhere).
 
-Run inside the api container:
-    docker compose exec api python scripts/seed_users.py
+Run inside the api container as a module, not a direct script path — the
+container's working directory is /app, and `python scripts/seed_users.py`
+puts /app/scripts (not /app) at sys.path[0], so `from config import
+settings` below fails with ModuleNotFoundError. `-m` runs it with /app on
+sys.path instead, since that's the current working directory:
+    docker compose exec api python -m scripts.seed_users
 """
 
 from __future__ import annotations

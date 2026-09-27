@@ -11,7 +11,11 @@ numpy<2.0
 
 # ANPR (Phase 5) — CPU-only OCR, deliberately not paddlepaddle-gpu; see
 # ocr_engine.py module docstring for why it stays off the GPU.
-paddlepaddle==2.6.1
+# 2.6.1 was pulled from PyPI at some point after this was first pinned
+# (only 2.6.2+ and 3.x are installable now) — bumped to the nearest patch
+# release rather than jumping to a 3.x line paddleocr==2.7.3 was never
+# tested against.
+paddlepaddle==2.6.2
 paddleocr==2.7.3
 
 # ANPR multi-vehicle upgrade — secondary/fallback OCR engine, only invoked

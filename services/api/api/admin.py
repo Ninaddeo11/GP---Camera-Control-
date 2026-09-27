@@ -20,7 +20,12 @@ from security.rbac import require_permission
 router = APIRouter(prefix="/admin/users", tags=["admin"])
 
 
-@router.post("/{username}/revoke-sessions", status_code=status.HTTP_204_NO_CONTENT)
+# response_model=None is required, not just the `-> None` return
+# annotation below: FastAPI resolves a bare `-> None` hint to the
+# NoneType *class* internally, which is truthy, so its 204-response-body
+# assertion fires as if a body were expected. Explicit response_model=None
+# is the actual falsy None FastAPI checks for.
+@router.post("/{username}/revoke-sessions", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def revoke_sessions(
     username: str,
     db: AsyncSession = Depends(get_db),

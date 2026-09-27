@@ -229,7 +229,10 @@ async def update_camera(
     return _to_out(camera)
 
 
-@router.delete("/{camera_id}", status_code=status.HTTP_204_NO_CONTENT)
+# response_model=None: see admin.py's revoke_sessions comment — a bare
+# `-> None` return annotation resolves to the truthy NoneType class, which
+# trips FastAPI's 204-must-not-have-a-body assertion at import time.
+@router.delete("/{camera_id}", status_code=status.HTTP_204_NO_CONTENT, response_model=None)
 async def deactivate_camera(
     camera_id: str,
     request: Request,

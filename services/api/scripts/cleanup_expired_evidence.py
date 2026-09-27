@@ -9,10 +9,14 @@ Deliberately a standalone script, not a scheduled background task inside
 the api process: retention cleanup is an infrequent (daily, say),
 possibly-slow filesystem walk, and mixing that into the same asyncio event
 loop as request handling and the Redis Streams consumers risks stalling
-both under load. Run this from cron/a scheduled job instead:
+both under load. Run this from cron/a scheduled job instead, as a module
+rather than a direct script path — the container's working directory is
+/app, and `python scripts/cleanup_expired_evidence.py` puts /app/scripts
+(not /app) at sys.path[0], so `from config import settings` below fails
+with ModuleNotFoundError:
 
-    docker compose exec api python scripts/cleanup_expired_evidence.py
-    docker compose exec api python scripts/cleanup_expired_evidence.py --dry-run
+    docker compose exec api python -m scripts.cleanup_expired_evidence
+    docker compose exec api python -m scripts.cleanup_expired_evidence --dry-run
 
 Idempotent — safe to re-run; rows/files already deleted are simply not
 found again.

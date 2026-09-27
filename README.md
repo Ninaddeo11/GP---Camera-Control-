@@ -424,11 +424,16 @@ camera catalogue, `stream_manager`, `inference`, `api`, `web`, `nginx`,
 
 Then run migrations and seed the RBAC foundation (one-time, or any time
 you reset the `postgres_data` volume — `alembic upgrade head` applies all
-four migrations, 0001 through 0004, in order):
+migrations, 0001 through the latest, in order). Run scripts as a module
+(`-m scripts.X`), not a direct script path — this container's working
+directory is `/app`, and `python scripts/seed_users.py` puts
+`/app/scripts` (not `/app`) at `sys.path[0]`, so `from config import
+settings` inside it fails with `ModuleNotFoundError`; confirmed the hard
+way the first time this was actually run against a real database:
 
 ```bash
 docker compose exec api alembic upgrade head
-docker compose exec api python scripts/seed_users.py
+docker compose exec api python -m scripts.seed_users
 ```
 
 Open `https://localhost` (accept the self-signed cert warning) and log in
@@ -444,7 +449,7 @@ waits for it to be processed, adds it to the watchlist, and prints the
 reconstructed route:
 
 ```bash
-docker compose exec api python scripts/demo.py
+docker compose exec api python -m scripts.demo
 ```
 
 For local development with hot reload:
@@ -701,7 +706,7 @@ are the two things most likely to need a fix on first real run.
 
 ### Verify tracking, watchlist, video wall, registry map, and audit export
 
-The fastest path is `docker compose exec api python scripts/demo.py` (see
+The fastest path is `docker compose exec api python -m scripts.demo` (see
 Quickstart above) — it exercises Phases 6 and 7 end to end in one run
 against real Redis/Postgres, and prints its own pass/fail-shaped output.
 Beyond that:
@@ -935,12 +940,45 @@ explicitly rather than papered over.
 
 ## Known gaps
 
-All 10 phases have code written for them, but **none of it has run on a
-real machine yet** — this whole build happened in a sandbox with no
-Docker, Python, or GPU available. Beyond the phase-specific caveats
-already called out above (the ByteTrack internal-API risk in Phase 4, the
-missing fine-tuned plate model in Phase 5), these are the gaps worth
-knowing about before treating this as demo-ready:
+**Update: the auth/RBAC/database path has now actually been run**, for
+the first time, against a real Supabase-hosted Postgres via
+`docker compose up` — login, migrations, and the seed script all verified
+working end to end (screenshotted in a real browser, not just curl). That
+one real run surfaced five genuine bugs no amount of code review had
+caught, all now fixed:
+
+1. Five FastAPI routes (`admin.py`, `auth.py` x2, `cameras.py`,
+   `watchlist.py`) declared `status_code=204` with a bare `-> None` return
+   annotation, which FastAPI resolves to the truthy `NoneType` *class* —
+   tripping its "204 must not have a body" assertion at import time and
+   crash-looping the whole api container before it could serve a single
+   request. Fixed with explicit `response_model=None`.
+2. `services/api/requirements.txt` was missing `prometheus-client`,
+   despite `metrics.py` importing it — present in `services/inference`'s
+   requirements but never added to the api service's own.
+3. `services/inference/requirements.txt` pinned `paddlepaddle==2.6.1`,
+   which has since been pulled from PyPI (bumped to `2.6.2`).
+4. Every script under `services/api/scripts/` documented `docker compose
+   exec api python scripts/X.py` as its invocation — which never actually
+   worked, because Python puts the *script's* directory (not the working
+   directory) at `sys.path[0]` for a direct script path, breaking `from
+   config import settings`. Fixed to `python -m scripts.X` everywhere,
+   including here in this README.
+5. `infra/nginx/nginx.conf`'s Content-Security-Policy set a bare
+   `script-src 'self'`, which blocks Next.js App Router's own required
+   inline hydration scripts — the entire frontend rendered as a blank
+   white page through nginx (worked fine hitting the `web` container
+   directly on :3000, which is exactly why this went unnoticed). Fixed
+   with `'unsafe-inline'`; a properly nonce-based CSP is real follow-up
+   work, not done here (see Transformation Phase 15 below).
+
+Beyond auth/RBAC, though, **the ANPR/vision pipeline (Phases 4-5) and the
+frontend's other pages still haven't been run against live camera
+footage** — this was a database/auth-path verification, not a full
+end-to-end demo run. Beyond the phase-specific caveats already called out
+above (the ByteTrack internal-API risk in Phase 4, the missing fine-tuned
+plate model in Phase 5), these are the gaps worth knowing about before
+treating this as fully demo-ready:
 
 - **go2rtc has no authentication of its own, and no TLS.** `apps/web`
   connects to it directly from the browser for WHEP (see `lib/use-whep.ts`)
