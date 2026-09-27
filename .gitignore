@@ -16,6 +16,11 @@ apps/web/out/
 # Env
 .env
 .env.local
+# Only ever contains the two NEXT_PUBLIC_* frontend values for pasting
+# into Vercel's "Import .env" — not secret, but specific to one machine's
+# local Docker setup (points at localhost), so it doesn't belong in the
+# shared repo either way.
+vercel.env
 
 # go2rtc.yaml in services/ingestion-config/generated/ is intentionally
 # tracked, not ignored: it's the placeholder checked in so go2rtc has a
