@@ -194,8 +194,18 @@ services:
     restart: unless-stopped
     depends_on:
       - api
-    ports:
-      - "3000:3000"
+    # Deliberately NOT publishing 3000 to the host anymore. This
+    # container is still reachable by nginx over the internal
+    # `sentinelgrid` network without a published port — `ports:` only
+    # controls host access, not container-to-container traffic. Publishing
+    # it used to make http://localhost:3000 a second, "convenient for
+    # debugging" way to reach the app — but the app itself always calls
+    # https://localhost/api (baked into NEXT_PUBLIC_API_BASE_URL above),
+    # so loading the page from :3000 makes every API call cross-origin to
+    # a certificate the browser was never asked to trust for that
+    # navigation, which fails silently and looks exactly like a broken
+    # login. https://localhost (through nginx, below) is now the only
+    # entry point, on purpose, so that failure mode can't happen again.
     networks: [sentinelgrid]
     logging: *default-logging
 
