@@ -10,12 +10,16 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+RUN chmod +x entrypoint.sh
 
 EXPOSE 8000
 
-# Render (and most PaaS Docker runtimes) inject a $PORT env var and expect
-# the container to listen on it, which docker-compose's fixed 8000:8000
-# mapping never needed — shell form + ${PORT:-8000} keeps both working:
-# unset locally (falls back to 8000, matching docker-compose), set on
-# Render (uses whatever it assigns).
-CMD uvicorn main:app --host 0.0.0.0 --port ${PORT:-8000}
+# entrypoint.sh runs migrations + the idempotent seed script before
+# starting uvicorn on every boot — see that file's own comment for why
+# this replaces a separate one-off "run migrations after deploy" step
+# (not available at all on Render's free plan, easy to forget by hand
+# anywhere else). It also handles $PORT the same way the previous direct
+# CMD did: unset locally (falls back to 8000, matching docker-compose's
+# fixed mapping), set on Render/most PaaS Docker runtimes (uses whatever
+# they assign).
+CMD ["./entrypoint.sh"]
