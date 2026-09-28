@@ -125,6 +125,24 @@ export interface WatchlistAlertMessage {
   acknowledged: boolean;
 }
 
+export interface AuditLogEntryOut {
+  id: string;
+  ts: string;
+  username: string;
+  action: string;
+  resource_type: string;
+  resource_id: string;
+  outcome: "allow" | "deny";
+  reason: string;
+  ip_address: string;
+  request_path: string;
+}
+
+export interface AuditChainVerification {
+  intact: boolean;
+  row_count: number;
+}
+
 export interface ApiError {
   detail: string;
   code: string;

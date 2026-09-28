@@ -16,11 +16,11 @@ provided. See README.md "ANPR model gap" for how to add one.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 import numpy as np
 
 import config
+from yolo_loader import load_yolo_model
 
 log = logging.getLogger("inference.plate_detector")
 
@@ -31,22 +31,17 @@ class PlateDetector:
         self.device = device
         self._model = None
 
-        if not Path(model_path).exists():
+        try:
+            self._model = load_yolo_model(model_path, device)
+            self.available = True
+            log.info("Plate detector loaded from %s on device=%s", model_path, device)
+        except FileNotFoundError:
             log.warning(
                 "Plate detector model not found at %s — ANPR is disabled until a "
                 "fine-tuned plate-detection model is provided (see README.md "
                 "'ANPR model gap'). Vehicle detection and tracking are unaffected.",
                 model_path,
             )
-            return
-
-        from ultralytics import YOLO  # local import: skip the load entirely when disabled
-
-        try:
-            self._model = YOLO(model_path)
-            self._model.to(device)
-            self.available = True
-            log.info("Plate detector loaded from %s on device=%s", model_path, device)
         except Exception:
             log.exception("Failed to load plate detector model from %s — ANPR disabled", model_path)
 

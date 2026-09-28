@@ -19,6 +19,8 @@ import logging
 
 import numpy as np
 
+from ocr_common import combine_ocr_lines
+
 log = logging.getLogger("inference.ocr_fallback")
 
 
@@ -63,10 +65,4 @@ class EasyOcrEngine:
             top_y = min(p[1] for p in box_points)
             entries.append((top_y, text, float(conf)))
 
-        if not entries:
-            return None
-
-        entries.sort(key=lambda e: e[0])
-        combined_text = "".join(text for _, text, _ in entries)
-        min_conf = min(conf for _, _, conf in entries)
-        return combined_text, min_conf
+        return combine_ocr_lines(entries)

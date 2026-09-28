@@ -15,24 +15,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { apiFetch, ApiRequestError } from "@/lib/api-client";
-
-interface AuditLogEntryOut {
-  id: string;
-  ts: string;
-  username: string;
-  action: string;
-  resource_type: string;
-  resource_id: string;
-  outcome: "allow" | "deny";
-  reason: string;
-  ip_address: string;
-  request_path: string;
-}
-
-interface AuditChainVerification {
-  intact: boolean;
-  row_count: number;
-}
+import type { AuditLogEntryOut, AuditChainVerification } from "@/lib/types";
 
 export default function AuditLogPage() {
   const [search, setSearch] = useState("");

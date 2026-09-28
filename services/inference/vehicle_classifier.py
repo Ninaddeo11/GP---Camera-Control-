@@ -34,6 +34,7 @@ from typing import Literal
 import numpy as np
 
 import config
+from yolo_loader import load_yolo_model
 
 log = logging.getLogger("inference.vehicle_classifier")
 
@@ -75,7 +76,11 @@ class _YoloClassifier:
         self._label_name = label_name
         self._model = None
 
-        if not Path(model_path).exists():
+        try:
+            self._model = load_yolo_model(model_path, device)
+            self.available = True
+            log.info("%s classifier loaded from %s on device=%s", label_name, model_path, device)
+        except FileNotFoundError:
             log.info(
                 "%s classifier model not found at %s — this enrichment stage stays "
                 "disabled (vehicles will report %s=Unknown) until a model is provided. "
@@ -84,15 +89,6 @@ class _YoloClassifier:
                 model_path,
                 label_name.lower(),
             )
-            return
-
-        from ultralytics import YOLO  # local import: skip the load entirely when disabled
-
-        try:
-            self._model = YOLO(model_path)
-            self._model.to(device)
-            self.available = True
-            log.info("%s classifier loaded from %s on device=%s", label_name, model_path, device)
         except Exception:
             log.exception("Failed to load %s classifier from %s — enrichment disabled", label_name, model_path)
 
