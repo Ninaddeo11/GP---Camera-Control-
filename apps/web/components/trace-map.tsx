@@ -3,8 +3,17 @@
 import "leaflet/dist/leaflet.css";
 
 import L from "leaflet";
-import { CircleMarker, MapContainer, Polyline, Popup, TileLayer } from "react-leaflet";
+import { useEffect } from "react";
+import { coordinates } from "@/lib/camera-registry";
+import {
+  CircleMarker,
+  MapContainer,
+  Polyline,
+  Popup,
+  useMap,
+} from "react-leaflet";
 
+import { MapBaseLayer } from "@/components/map-base-layer";
 import type { CameraStop } from "@/lib/types";
 
 // Leaflet's default marker icon assets are broken by bundlers unless
@@ -20,28 +29,44 @@ interface TraceMapProps {
 
 export default function TraceMap({ stops }: TraceMapProps) {
   const located = stops.filter(
-    (s): s is CameraStop & { lat: number; lon: number } => s.lat !== null && s.lon !== null
+    (s): s is CameraStop & { lat: number; lon: number } =>
+      coordinates(s.lat, s.lon) !== null,
   );
 
   const firstStop = located[0];
-  const center: [number, number] = firstStop ? [firstStop.lat, firstStop.lon] : GUJARAT_CENTER;
-  const polylinePositions: [number, number][] = located.map((s) => [s.lat, s.lon]);
+  const center: [number, number] = firstStop
+    ? [firstStop.lat, firstStop.lon]
+    : GUJARAT_CENTER;
+  const polylinePositions: [number, number][] = located.map((s) => [
+    s.lat,
+    s.lon,
+  ]);
 
   return (
-    <MapContainer center={center} zoom={located.length > 0 ? 11 : 7} className="h-full w-full rounded">
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+    <MapContainer
+      center={center}
+      zoom={located.length > 0 ? 11 : 7}
+      className="h-full w-full rounded"
+    >
+      <FitRoute positions={polylinePositions} />
+      <MapBaseLayer />
       {polylinePositions.length >= 2 && (
-        <Polyline positions={polylinePositions} pathOptions={{ color: "#1D4E9C", weight: 3 }} />
+        <Polyline
+          positions={polylinePositions}
+          pathOptions={{ color: "rgb(var(--accent))", weight: 3 }}
+        />
       )}
       {located.map((stop, index) => (
         <CircleMarker
           key={`${stop.camera_id}-${stop.first_seen}`}
           center={[stop.lat, stop.lon]}
           radius={8 + Math.min(stop.dwell_seconds / 60, 12)}
-          pathOptions={{ color: "#1D4E9C", fillColor: "#1D4E9C", fillOpacity: 0.35, weight: 2 }}
+          pathOptions={{
+            color: "rgb(var(--accent))",
+            fillColor: "rgb(var(--accent))",
+            fillOpacity: 0.35,
+            weight: 2,
+          }}
         >
           <Popup>
             <div className="text-xs">
@@ -59,4 +84,16 @@ export default function TraceMap({ stops }: TraceMapProps) {
       ))}
     </MapContainer>
   );
+}
+
+function FitRoute({ positions }: { positions: [number, number][] }) {
+  const map = useMap();
+  useEffect(() => {
+    if (positions.length)
+      map.fitBounds(L.latLngBounds(positions), {
+        padding: [35, 35],
+        maxZoom: 15,
+      });
+  }, [map, positions]);
+  return null;
 }

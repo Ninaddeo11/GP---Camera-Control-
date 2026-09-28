@@ -2,35 +2,22 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Design mandate: navy/slate/white, one accent, no neon/glow — see
-   README.md "Design mandate". Values are "R G B" (no commas) so Tailwind's
-   `rgb(var(--x) / <alpha-value>)` opacity syntax works. */
-:root {
-  --background: 255 255 255;
-  --foreground: 15 23 42; /* slate-900 */
-  --surface: 255 255 255;
-  --surface-muted: 248 250 252; /* slate-50 */
-  --border: 226 232 240; /* slate-200 */
-  --muted: 100 116 139; /* slate-500 */
-  --accent: 29 78 156; /* muted navy-blue */
-  --accent-foreground: 255 255 255;
-  --danger: 220 38 38; /* red-600 */
-  --warning: 217 119 6; /* amber-600 */
-  --success: 5 150 105; /* emerald-600 */
-}
-
+:root,
 .dark {
-  --background: 2 6 23; /* slate-950 */
-  --foreground: 226 232 240; /* slate-200 */
-  --surface: 15 23 42; /* slate-900 */
-  --surface-muted: 30 41 59; /* slate-800 */
-  --border: 51 65 85; /* slate-600 */
-  --muted: 148 163 184; /* slate-400 */
-  --accent: 96 165 250; /* blue-400, lighter for contrast on dark */
-  --accent-foreground: 2 6 23;
-  --danger: 248 113 113; /* red-400 */
-  --warning: 251 191 36; /* amber-400 */
-  --success: 52 211 153; /* emerald-400 */
+  color-scheme: dark;
+  --background: 6 20 38;
+  --foreground: 245 249 255;
+  --surface: 11 35 66;
+  --surface-muted: 16 47 86;
+  --border: 23 61 102;
+  --muted: 157 181 207;
+  --accent: 22 119 255;
+  --accent-foreground: 255 255 255;
+  --cyan: 32 199 255;
+  --danger: 244 63 94;
+  --warning: 245 158 11;
+  --success: 34 197 94;
+  --unknown: 100 116 139;
 }
 
 * {
@@ -40,7 +27,14 @@
 body {
   background-color: rgb(var(--background));
   color: rgb(var(--foreground));
-  font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family:
+    var(--font-inter),
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -48,7 +42,8 @@ body {
    Paired with an "Unacknowledged" text label wherever it's used, never
    color alone (see components/ui/badge.tsx for the same rule). */
 @keyframes alert-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgb(var(--danger) / 0.35);
   }
   50% {
@@ -60,38 +55,31 @@ body {
   animation: alert-pulse 2s ease-in-out infinite;
 }
 
-/* -------------------------------------------------------------------------
-   Public landing page ("/") only — a deliberately different, cinematic dark
-   palette from the authenticated app shell's calm enterprise tokens above.
-   Scoped under .landing-page so it never leaks into the dashboard, and the
-   dashboard's tokens never leak into the landing page either. See
-   README.md "Design mandate" for why these are intentionally different:
-   the app shell is Linear/Stripe-calm; the public site is the "front door"
-   and is allowed to be more cinematic, per components/landing's brief.
-   ------------------------------------------------------------------------- */
+/* Public and authentication surfaces share the operational blue palette. */
 .landing-page {
-  --lp-bg-00: 3 7 13;      /* #03070D — deepest hero background layer */
-  --lp-bg-0: 5 11 18;      /* #050B12 */
-  --lp-bg-1: 7 17 28;      /* #07111C */
-  --lp-bg-2: 11 22 36;     /* #0B1624 */
-  --lp-primary: 22 136 255;   /* #1688FF */
+  --lp-bg-00: var(--background);
+  --lp-bg-0: 8 27 51;
+  --lp-bg-1: var(--surface);
+  --lp-bg-2: var(--surface-muted);
+  --lp-primary: var(--accent);
   --lp-primary-2: 46 168 255; /* #2EA8FF */
-  --lp-tertiary: 87 188 255;  /* #57BCFF */
-  --lp-secondary: 105 199 255; /* #69C7FF */
-  --lp-success: 50 213 131;   /* #32D583 */
-  --lp-warning: 245 185 66;   /* #F5B942 */
-  --lp-alert: 255 77 90;      /* #FF4D5A */
-  --lp-text-0: 255 255 255;
+  --lp-tertiary: 87 188 255; /* #57BCFF */
+  --lp-secondary: var(--cyan);
+  --lp-success: var(--success);
+  --lp-warning: var(--warning);
+  --lp-alert: var(--danger);
+  --lp-text-0: var(--foreground);
   --lp-text-1: 203 213 225; /* slate-300 */
-  --lp-text-2: 148 163 184; /* slate-400 */
-  --lp-border: 30 58 95;   /* a dim, desaturated blue-slate border */
+  --lp-text-2: var(--muted);
+  --lp-border: var(--border);
 
   background-color: rgb(var(--lp-bg-0));
   color: rgb(var(--lp-text-0));
 }
 
 @keyframes lp-node-pulse {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 0 0 rgb(var(--lp-primary) / 0.45);
   }
   50% {
@@ -113,10 +101,20 @@ body {
 }
 
 @keyframes lp-scan {
-  0% { transform: translateY(-100%); opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { transform: translateY(100%); opacity: 0; }
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
 }
 .lp-scan-line {
   animation: lp-scan 6s ease-in-out infinite;
@@ -128,6 +126,129 @@ body {
   .landing-page *::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Shared operational surfaces and map chrome. */
+:focus-visible {
+  outline: 2px solid rgb(var(--cyan));
+  outline-offset: 3px;
+}
+select {
+  background: rgb(var(--surface));
+  color: rgb(var(--foreground));
+  border: 1px solid rgb(var(--border));
+  border-radius: 8px;
+  padding: 8px;
+  max-width: 100%;
+}
+button,
+a,
+input,
+select {
+  transition:
+    background-color 180ms,
+    border-color 180ms,
+    box-shadow 180ms;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--border)) transparent;
+}
+main h1 {
+  font-size: 1.5rem;
+  letter-spacing: -0.035em;
+}
+.leaflet-container {
+  background: rgb(var(--background)) !important;
+  font-family: inherit !important;
+}
+.leaflet-tile-pane {
+  filter: invert(1) hue-rotate(185deg) brightness(0.72) saturate(0.65);
+}
+.leaflet-popup-content-wrapper,
+.leaflet-popup-tip,
+.leaflet-control-zoom a,
+.leaflet-control-attribution {
+  background: rgb(var(--surface)) !important;
+  color: rgb(var(--foreground)) !important;
+}
+.leaflet-popup-content-wrapper {
+  border: 1px solid rgb(var(--border));
+  border-radius: 12px !important;
+}
+.leaflet-container a {
+  color: rgb(var(--cyan));
+}
+.camera-marker {
+  color: rgb(var(--cyan));
+  background: rgb(var(--surface));
+  border: 2px solid currentColor;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 8px #0006;
+}
+.camera-marker svg {
+  width: 18px;
+  height: 18px;
+}
+.camera-marker.reconnecting {
+  color: rgb(var(--warning));
+}
+.camera-marker.offline {
+  color: rgb(var(--danger));
+}
+.camera-marker.unknown {
+  color: rgb(var(--muted));
+}
+.camera-marker.selected {
+  outline: 3px solid rgb(var(--foreground));
+  outline-offset: 3px;
+}
+.camera-cluster {
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(var(--surface-muted));
+  border: 2px solid rgb(var(--cyan));
+  color: rgb(var(--foreground));
+  font-weight: 700;
+  box-shadow: 0 0 0 5px rgb(var(--accent) / 0.15);
+}
+.registry-layout {
+  display: grid;
+  grid-template-columns: 310px minmax(0, 1fr);
+  flex: 1;
+  min-height: 480px;
+}
+@media (max-width: 767px) {
+  .registry-layout {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  .registry-map-panel {
+    min-height: 430px;
+  }
+  .registry-list-panel {
+    max-height: 480px;
+  }
+  .video-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+  [role="dialog"] > div {
+    flex-direction: column;
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
     transition-duration: 0.001ms !important;
     scroll-behavior: auto !important;
   }

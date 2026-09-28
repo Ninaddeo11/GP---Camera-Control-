@@ -7,11 +7,22 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeadCell, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeadCell,
+  TableRow,
+} from "@/components/ui/table";
 import { apiFetch, ApiRequestError } from "@/lib/api-client";
 import { useAuth } from "@/lib/auth-context";
 import { useAlertStream } from "@/lib/use-alert-stream";
-import type { WatchlistEntryOut, WatchlistMatchOut, WatchlistPriority } from "@/lib/types";
+import type {
+  WatchlistEntryOut,
+  WatchlistMatchOut,
+  WatchlistPriority,
+} from "@/lib/types";
 
 const PRIORITIES: WatchlistPriority[] = ["low", "medium", "high", "critical"];
 
@@ -20,6 +31,7 @@ export default function WatchlistPage() {
   const canWrite = hasPermission("watchlist:write");
   const canAcknowledge = hasPermission("alert:acknowledge");
 
+  const [loading, setLoading] = useState(true);
   const [entries, setEntries] = useState<WatchlistEntryOut[]>([]);
   const [alerts, setAlerts] = useState<WatchlistMatchOut[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -34,21 +46,30 @@ export default function WatchlistPage() {
     try {
       setEntries(await apiFetch<WatchlistEntryOut[]>("/watchlist"));
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Failed to load watchlist.");
+      setError(
+        err instanceof ApiRequestError
+          ? err.message
+          : "Failed to load watchlist.",
+      );
     }
   }, []);
 
   const loadAlerts = useCallback(async () => {
     try {
-      setAlerts(await apiFetch<WatchlistMatchOut[]>("/watchlist/matches?limit=100"));
+      setAlerts(
+        await apiFetch<WatchlistMatchOut[]>("/watchlist/matches?limit=100"),
+      );
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Failed to load alerts.");
+      setError(
+        err instanceof ApiRequestError ? err.message : "Failed to load alerts.",
+      );
     }
   }, []);
 
   useEffect(() => {
-    void loadEntries();
-    void loadAlerts();
+    void Promise.all([loadEntries(), loadAlerts()]).finally(() =>
+      setLoading(false),
+    );
   }, [loadEntries, loadAlerts]);
 
   useAlertStream(
@@ -76,7 +97,7 @@ export default function WatchlistPage() {
           ...prev,
         ];
       });
-    }, [])
+    }, []),
   );
 
   async function handleAddEntry(e: FormEvent) {
@@ -87,14 +108,20 @@ export default function WatchlistPage() {
     try {
       await apiFetch("/watchlist", {
         method: "POST",
-        body: JSON.stringify({ plate_text: newPlate.trim(), reason: newReason.trim(), priority: newPriority }),
+        body: JSON.stringify({
+          plate_text: newPlate.trim(),
+          reason: newReason.trim(),
+          priority: newPriority,
+        }),
       });
       setNewPlate("");
       setNewReason("");
       setNewPriority("medium");
       await loadEntries();
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Failed to add entry.");
+      setError(
+        err instanceof ApiRequestError ? err.message : "Failed to add entry.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -105,19 +132,30 @@ export default function WatchlistPage() {
       await apiFetch(`/watchlist/${id}`, { method: "DELETE" });
       await loadEntries();
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Failed to remove entry.");
+      setError(
+        err instanceof ApiRequestError
+          ? err.message
+          : "Failed to remove entry.",
+      );
     }
   }
 
   async function handleAcknowledge(id: string) {
     setAcknowledgingId(id);
     try {
-      const updated = await apiFetch<WatchlistMatchOut>(`/watchlist/matches/${id}/acknowledge`, {
-        method: "POST",
-      });
+      const updated = await apiFetch<WatchlistMatchOut>(
+        `/watchlist/matches/${id}/acknowledge`,
+        {
+          method: "POST",
+        },
+      );
       setAlerts((prev) => prev.map((a) => (a.id === id ? updated : a)));
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.message : "Failed to acknowledge alert.");
+      setError(
+        err instanceof ApiRequestError
+          ? err.message
+          : "Failed to acknowledge alert.",
+      );
     } finally {
       setAcknowledgingId(null);
     }
@@ -128,12 +166,20 @@ export default function WatchlistPage() {
   return (
     <div className="flex h-full flex-col gap-4">
       <div>
-        <h1 className="text-lg font-semibold text-foreground">Watchlist &amp; Alerts</h1>
+        <h1 className="text-lg font-semibold text-foreground">
+          Watchlist &amp; Alerts
+        </h1>
         <p className="text-sm text-muted">
-          Live feed of watchlist matches across your jurisdiction, correlated in real time.
+          Live feed of watchlist matches across your jurisdiction, correlated in
+          real time.
         </p>
       </div>
 
+      {loading && (
+        <p role="status" className="text-sm text-muted">
+          Loading watchlist and alerts?
+        </p>
+      )}
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -147,9 +193,15 @@ export default function WatchlistPage() {
           </CardHeader>
           <CardContent className="flex min-h-0 flex-1 flex-col gap-4">
             {canWrite && (
-              <form onSubmit={handleAddEntry} className="flex flex-wrap items-end gap-2">
+              <form
+                onSubmit={handleAddEntry}
+                className="flex flex-wrap items-end gap-2"
+              >
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="new-plate" className="text-xs font-medium text-muted">
+                  <label
+                    htmlFor="new-plate"
+                    className="text-xs font-medium text-muted"
+                  >
                     Plate
                   </label>
                   <Input
@@ -162,7 +214,10 @@ export default function WatchlistPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="new-reason" className="text-xs font-medium text-muted">
+                  <label
+                    htmlFor="new-reason"
+                    className="text-xs font-medium text-muted"
+                  >
                     Reason
                   </label>
                   <Input
@@ -174,13 +229,18 @@ export default function WatchlistPage() {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label htmlFor="new-priority" className="text-xs font-medium text-muted">
+                  <label
+                    htmlFor="new-priority"
+                    className="text-xs font-medium text-muted"
+                  >
                     Priority
                   </label>
                   <select
                     id="new-priority"
                     value={newPriority}
-                    onChange={(e) => setNewPriority(e.target.value as WatchlistPriority)}
+                    onChange={(e) =>
+                      setNewPriority(e.target.value as WatchlistPriority)
+                    }
                     className="h-9 rounded border border-border bg-surface px-2 text-sm"
                   >
                     {PRIORITIES.map((p) => (
@@ -210,17 +270,35 @@ export default function WatchlistPage() {
                 <TableBody>
                   {entries.map((entry) => (
                     <TableRow key={entry.id}>
-                      <TableCell className="font-medium">{entry.plate_text}</TableCell>
+                      <TableCell className="font-medium">
+                        {entry.plate_text}
+                      </TableCell>
                       <TableCell>
-                        <Badge tone={entry.priority === "critical" || entry.priority === "high" ? "danger" : "neutral"}>
+                        <Badge
+                          tone={
+                            entry.priority === "critical"
+                              ? "danger"
+                              : entry.priority === "high"
+                                ? "warning"
+                                : "accent"
+                          }
+                        >
                           {entry.priority}
                         </Badge>
                       </TableCell>
-                      <TableCell className="text-muted">{entry.reason || "—"}</TableCell>
-                      <TableCell className="text-muted">{new Date(entry.created_at).toLocaleDateString()}</TableCell>
+                      <TableCell className="text-muted">
+                        {entry.reason || "—"}
+                      </TableCell>
+                      <TableCell className="text-muted">
+                        {new Date(entry.created_at).toLocaleDateString()}
+                      </TableCell>
                       {canWrite && (
                         <TableCell>
-                          <Button variant="ghost" size="sm" onClick={() => void handleDeactivate(entry.id)}>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => void handleDeactivate(entry.id)}
+                          >
                             Remove
                           </Button>
                         </TableCell>
@@ -229,7 +307,11 @@ export default function WatchlistPage() {
                   ))}
                 </TableBody>
               </Table>
-              {entries.length === 0 && <p className="p-4 text-sm text-muted">No active watchlist entries.</p>}
+              {!loading && entries.length === 0 && (
+                <p className="p-4 text-sm text-muted">
+                  No active watchlist entries.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -237,10 +319,12 @@ export default function WatchlistPage() {
         <Card className="flex min-h-0 flex-col">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Live alerts</CardTitle>
-            {unacknowledgedCount > 0 && <Badge tone="danger">{unacknowledgedCount} unacknowledged</Badge>}
+            {unacknowledgedCount > 0 && (
+              <Badge tone="danger">{unacknowledgedCount} unacknowledged</Badge>
+            )}
           </CardHeader>
           <CardContent className="flex-1 overflow-y-auto">
-            {alerts.length === 0 ? (
+            {alerts.length === 0 && !loading ? (
               <p className="text-sm text-muted">No alerts yet.</p>
             ) : (
               <div className="flex flex-col gap-3">
@@ -249,7 +333,11 @@ export default function WatchlistPage() {
                     key={alert.id}
                     alert={alert}
                     acknowledging={acknowledgingId === alert.id}
-                    onAcknowledge={canAcknowledge ? (id) => void handleAcknowledge(id) : () => undefined}
+                    onAcknowledge={
+                      canAcknowledge
+                        ? (id) => void handleAcknowledge(id)
+                        : () => undefined
+                    }
                   />
                 ))}
               </div>

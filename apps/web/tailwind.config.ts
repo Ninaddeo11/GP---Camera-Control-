@@ -1,8 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Design mandate: navy/slate/white base, one accent color, no neon/glow —
-// see README.md "Design mandate". Colors are CSS variables (app/globals.css)
-// so light/dark mode both stay professional slate, not black-and-neon.
+// One centralized navy/blue palette, shared across operational and public views.
 const config: Config = {
   darkMode: ["class"],
   content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
@@ -51,7 +49,7 @@ const config: Config = {
         ],
       },
       borderRadius: {
-        DEFAULT: "6px",
+        DEFAULT: "10px",
       },
     },
   },
