@@ -27,13 +27,63 @@ log:
 
 streams:
 
-  AMC-JUNCTION-001: "ffmpeg:https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8#video=h264"
+  cam01: "ffmpeg:http://gateway-adapter:9100/hls/cam01/index.m3u8#video=h264"
 
-  AMC-JUNCTION-002: "ffmpeg:https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8#video=h264"
+  cam02: "ffmpeg:http://gateway-adapter:9100/hls/cam02/index.m3u8#video=h264"
 
-  SG-HIGHWAY-003: "ffmpeg:https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8#video=h264"
+  cam03: "ffmpeg:http://gateway-adapter:9100/hls/cam03/index.m3u8#video=h264"
 
-  SURAT-RING-ROAD-004: "rtsp://192.0.2.10:554/unreachable#transport=tcp"
+  cam04: "ffmpeg:http://gateway-adapter:9100/hls/cam04/index.m3u8#video=h264"
 
-  VADODARA-CIRCLE-005: "ffmpeg:https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8#video=h264"
+  cam05: "ffmpeg:http://gateway-adapter:9100/hls/cam05/index.m3u8#video=h264"
+
+  cam06: "ffmpeg:http://gateway-adapter:9100/hls/cam06/index.m3u8#video=h264"
+
+  cam07: "ffmpeg:http://gateway-adapter:9100/hls/cam07/index.m3u8#video=h264"
+
+  cam08: "ffmpeg:http://gateway-adapter:9100/hls/cam08/index.m3u8#video=h264"
+
+  cam09: "ffmpeg:http://gateway-adapter:9100/hls/cam09/index.m3u8#video=h264"
+
+  cam10: "ffmpeg:http://gateway-adapter:9100/hls/cam10/index.m3u8#video=h264"
+
+  cam11: "ffmpeg:http://gateway-adapter:9100/hls/cam11/index.m3u8#video=h264"
+
+  cam12: "ffmpeg:http://gateway-adapter:9100/hls/cam12/index.m3u8#video=h264"
+
+  cam13: "ffmpeg:http://gateway-adapter:9100/hls/cam13/index.m3u8#video=h264"
+
+  cam14: "ffmpeg:http://gateway-adapter:9100/hls/cam14/index.m3u8#video=h264"
+
+  cam15: "ffmpeg:http://gateway-adapter:9100/hls/cam15/index.m3u8#video=h264"
+
+  cam16: "ffmpeg:http://gateway-adapter:9100/hls/cam16/index.m3u8#video=h264"
+
+  cam17: "ffmpeg:http://gateway-adapter:9100/hls/cam17/index.m3u8#video=h264"
+
+  cam18: "ffmpeg:http://gateway-adapter:9100/hls/cam18/index.m3u8#video=h264"
+
+  cam19: "ffmpeg:http://gateway-adapter:9100/hls/cam19/index.m3u8#video=h264"
+
+  cam20: "ffmpeg:http://gateway-adapter:9100/hls/cam20/index.m3u8#video=h264"
+
+  cam21: "ffmpeg:http://gateway-adapter:9100/hls/cam21/index.m3u8#video=h264"
+
+  cam22: "ffmpeg:http://gateway-adapter:9100/hls/cam22/index.m3u8#video=h264"
+
+  cam23: "ffmpeg:http://gateway-adapter:9100/hls/cam23/index.m3u8#video=h264"
+
+  cam24: "ffmpeg:http://gateway-adapter:9100/hls/cam24/index.m3u8#video=h264"
+
+  cam25: "ffmpeg:http://gateway-adapter:9100/hls/cam25/index.m3u8#video=h264"
+
+  cam26: "ffmpeg:http://gateway-adapter:9100/hls/cam26/index.m3u8#video=h264"
+
+  cam27: "ffmpeg:http://gateway-adapter:9100/hls/cam27/index.m3u8#video=h264"
+
+  cam28: "ffmpeg:http://gateway-adapter:9100/hls/cam28/index.m3u8#video=h264"
+
+  cam29: "ffmpeg:http://gateway-adapter:9100/hls/cam29/index.m3u8#video=h264"
+
+  cam30: "ffmpeg:http://gateway-adapter:9100/hls/cam30/index.m3u8#video=h264"
 

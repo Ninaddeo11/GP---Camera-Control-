@@ -95,11 +95,35 @@ services:
     logging: *default-logging
 
   catalogue:
+    # The mock catalogue — still built and available (INGEST_API_URL can
+    # be pointed back at it, e.g. for offline dev), but no longer the
+    # default source now that gateway-adapter provides a real one.
     build: ./services/catalogue-mock
     container_name: sentinelgrid-catalogue
     restart: unless-stopped
     ports:
       - "9000:9000"
+    networks: [sentinelgrid]
+    logging: *default-logging
+
+  gateway-adapter:
+    # Bridges to the real camera gateway at REAL_GATEWAY_BASE_URL (see
+    # services/gateway-adapter/app.py's docstring for why this exists —
+    # that gateway is a cookie-authenticated dashboard, not the bare
+    # /api/ingest contract stream_manager.py assumes). Requires
+    # REAL_GATEWAY_EMAIL / REAL_GATEWAY_PASSWORD in .env (real
+    # credentials — never committed; see .env.example).
+    build: ./services/gateway-adapter
+    container_name: sentinelgrid-gateway-adapter
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      REAL_GATEWAY_BASE_URL: ${REAL_GATEWAY_BASE_URL:-https://cctv.corp8.cloud}
+      REAL_GATEWAY_EMAIL: ${REAL_GATEWAY_EMAIL:?set REAL_GATEWAY_EMAIL in .env}
+      REAL_GATEWAY_PASSWORD: ${REAL_GATEWAY_PASSWORD:?set REAL_GATEWAY_PASSWORD in .env}
+      ADAPTER_BASE_URL: ${ADAPTER_BASE_URL:-http://gateway-adapter:9100}
+    ports:
+      - "9100:9100"
     networks: [sentinelgrid]
     logging: *default-logging
 
@@ -109,10 +133,10 @@ services:
     restart: unless-stopped
     depends_on:
       - go2rtc
-      - catalogue
+      - gateway-adapter
     env_file: .env
     environment:
-      INGEST_API_URL: ${INGEST_API_URL:-http://catalogue:9000/api/ingest}
+      INGEST_API_URL: ${INGEST_API_URL:-http://gateway-adapter:9100/api/ingest}
       GO2RTC_API_URL: ${GO2RTC_API_URL:-http://go2rtc:1984}
     volumes:
       - ./services/ingestion-config/generated:/app/generated
@@ -130,11 +154,13 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      gateway-adapter:
+        condition: service_started
     env_file: .env
     environment:
       DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://sentinelgrid:change-me-in-production@postgres:5432/sentinelgrid}
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
-      INGEST_API_URL: ${INGEST_API_URL:-http://catalogue:9000/api/ingest}
+      INGEST_API_URL: ${INGEST_API_URL:-http://gateway-adapter:9100/api/ingest}
     volumes:
       # Read-only: services/inference owns writing into this volume
       # (snapshots for evidentiary plate reads); the api service only
@@ -158,7 +184,7 @@ services:
       - redis
     env_file: .env
     environment:
-      INGEST_API_URL: ${INGEST_API_URL:-http://catalogue:9000/api/ingest}
+      INGEST_API_URL: ${INGEST_API_URL:-http://gateway-adapter:9100/api/ingest}
       GO2RTC_RTSP_HOST: go2rtc
       REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
       SENTINELGRID_DEVICE: ${SENTINELGRID_DEVICE:-cuda:0}
