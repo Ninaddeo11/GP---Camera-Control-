@@ -67,11 +67,12 @@ until it's actually runnable and verified.
       detection + per-camera ByteTrack, PTS-driven pacing, scene-
       discontinuity handling, Redis Streams publishing. *(this commit — one
       internal-API risk flagged below, needs verification on a real GPU)*
-- [x] **Phase 5 — ANPR pipeline.** `services/inference`: YOLO11 plate
+- [x] **Phase 5 — ANPR pipeline.** `services/inference`: YOLO plate
       localization + PaddleOCR + Indian-plate normalization, deduplicated
       per track, into a new `plate_events` Redis Stream. *(this commit —
-      **no fine-tuned plate model ships in this repo**; ANPR cleanly
-      disables itself until one is provided — see "ANPR model gap" below)*
+      **a real, licensed, general-purpose plate detector ships and runs
+      end to end; it is not fine-tuned on Indian plates specifically** —
+      see "ANPR model gap" below)*
       **Multi-vehicle ANPR upgrade** (later commit): plate-crop quality
       gating + enhancement (blur/size/contrast, CLAHE, sharpening) before
       OCR; a secondary OCR engine (EasyOCR) invoked only when PaddleOCR is
@@ -267,21 +268,26 @@ shape is clearer, rather than rushed here.
   (a wrong input format could look like it's working while producing bad
   track IDs). **This needs a one-time manual check** — see the caveat at
   the top of `tracker.py` for exactly what to verify and how.
-- **ANPR model gap (flag this before demoing Phase 5):** this repo does
-  not include a fine-tuned license-plate detector. Training one needs a
-  labeled Indian-plate dataset and a training run, which is out of scope
-  for what could be produced in this environment — and I deliberately
-  didn't bake in a guessed download URL for a third-party "pretrained
-  plate detector" I couldn't verify actually exists or works, since a
-  wrong one fails silently or badly. Instead, `services/inference
-  /plate_detector.py` checks for a weights file at `PLATE_MODEL_PATH`
-  (default `models/yolo11n-plate.pt`) at startup; if it's missing, ANPR
-  logs a clear warning and disables itself — vehicle detection and
-  tracking (Phase 4) are completely unaffected. **To enable ANPR:** fine-
-  tune (or otherwise obtain) a YOLO11 license-plate detector, place the
-  `.pt` file at that path inside the `inference_models` Docker volume (or
-  point `PLATE_MODEL_PATH` at a mounted host path), and restart the
-  `inference` container — no code changes needed.
+- **ANPR model gap (flag this before demoing Phase 5) — narrowed, not
+  fully closed:** this repo does not include a plate detector fine-tuned
+  on Indian plates specifically — training one needs a labeled
+  Indian-plate dataset and a training run, out of scope for what this
+  environment can produce. What it DOES ship now (`services/inference
+  /Dockerfile`, downloaded at build time, not a guessed URL — verified by
+  loading it and checking its task/class head before wiring it in) is a
+  real one: `yasirfaizahmed/license-plate-object-detection` on Hugging
+  Face (Apache 2.0), fine-tuned on the public general-purpose
+  `keremberke/license-plate-object-detection` Roboflow dataset. Treat its
+  own reported accuracy as optimistic for Indian plates specifically —
+  see `services/inference/plate_detector.py`'s docstring for the full
+  accuracy-transfer reasoning. `PLATE_MODEL_PATH` (default
+  `models/plate-detector-generic.pt`) still degrades the same way as
+  before if that download ever fails: a clear warning, ANPR disables
+  itself, vehicle detection/tracking (Phase 4) unaffected. **To improve
+  on this:** fine-tune (or obtain) an Indian-plate-specific detector,
+  place the `.pt` file at that path inside the `inference_models` Docker
+  volume (or point `PLATE_MODEL_PATH` at a mounted host path), and
+  restart the `inference` container — no code changes needed.
 - **PaddleOCR dependency risk:** `services/inference/requirements.txt`
   pins `paddleocr==2.7.3` + CPU-only `paddlepaddle==2.6.1`, deliberately
   kept off the GPU to avoid a second CUDA/cuDNN build fighting the

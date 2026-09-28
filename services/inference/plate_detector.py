@@ -1,16 +1,36 @@
-"""License-plate localization: a YOLO11 model fine-tuned specifically for
-plate detection, run on the cropped vehicle ROI (not the full frame) — per
-the project brief, this replaces openalpr's detector, which the brief
+"""License-plate localization: a YOLO model run on the cropped vehicle ROI
+(not the full frame) to find where the plate is, before OCR ever runs —
+per the project brief, this replaces openalpr's detector, which the brief
 calls out as dated for Indian plates.
 
-No fine-tuned model ships in this repo — training one needs a labeled
-Indian-plate dataset and a training run, neither of which this environment
-can produce. Rather than guess at a public model URL and bake in a
-download that might silently be wrong or unavailable, this class checks
-for a local weights file at startup and disables itself with a clear log
-message if it's missing. Detection/tracking (Phase 4) keeps working either
-way; ANPR (this phase) simply produces no plate reads until a model is
-provided. See README.md "ANPR model gap" for how to add one.
+No Indian-plate-*fine-tuned* model ships in this repo — that needs a
+labeled Indian-plate dataset and a training run, neither of which this
+environment can produce, and guessing at a public model URL and baking in
+a download that might silently be wrong risked shipping something worse
+than nothing.
+
+What DOES ship (see services/inference/Dockerfile) is a real, verified
+one: yasirfaizahmed/license-plate-object-detection on Hugging Face
+(Apache 2.0, downloaded at image build time to
+models/plate-detector-generic.pt), a YOLOv8 model fine-tuned on the
+public "keremberke/license-plate-object-detection" Roboflow dataset —
+confirmed by loading it and checking its task/class head before wiring it
+in here, not taken on faith. That dataset is general-purpose, not
+India-specific, so treat its own reported accuracy (mAP@50 in the high
+0.9x range on its own test split) as optimistic for Indian plates
+specifically: plate *localization* (finding a rectangular, high-contrast
+region) tends to transfer across regions better than OCR does, since it's
+a more generic visual task than reading region-specific fonts/layouts,
+but that transfer has NOT been empirically verified against real Indian
+CCTV footage in this environment — there is none available to test
+against. Swap PLATE_MODEL_PATH for a real Indian-plate-fine-tuned model
+the moment one exists; nothing else needs to change.
+
+This class checks for a local weights file at startup and disables
+itself with a clear log message if it's missing (e.g. the Dockerfile's
+download failed) — same graceful-degradation behavior as before this
+model existed. Detection/tracking (Phase 4) keeps working either way.
+See README.md "ANPR model gap" for more.
 """
 
 from __future__ import annotations

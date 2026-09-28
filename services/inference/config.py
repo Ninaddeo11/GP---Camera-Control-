@@ -48,12 +48,14 @@ MAX_CONSECUTIVE_READ_FAILURES = _int("MAX_CONSECUTIVE_READ_FAILURES", 15)
 DISCONTINUITY_GAP_MS = _float("DISCONTINUITY_GAP_MS", 4000.0)
 
 # -- ANPR (Phase 5) ----------------------------------------------------------------
-# No fine-tuned Indian-plate model ships in this repo (that needs a labeled
-# training run this sandbox can't produce — see README.md "ANPR model gap").
-# PlateDetector checks for this file at startup and disables ANPR with a
-# clear log message if it's missing, rather than crashing the service —
-# Phase 4 detection/tracking keeps working either way.
-PLATE_MODEL_PATH = os.environ.get("PLATE_MODEL_PATH", "models/yolo11n-plate.pt")
+# A real, verified (not fine-tuned for Indian plates specifically — see
+# plate_detector.py's docstring for the full provenance/license/accuracy
+# writeup) model ships via services/inference/Dockerfile, downloaded at
+# build time. PlateDetector checks for this file at startup and disables
+# ANPR with a clear log message if it's missing (e.g. that download
+# failed), rather than crashing the service — Phase 4 detection/tracking
+# keeps working either way.
+PLATE_MODEL_PATH = os.environ.get("PLATE_MODEL_PATH", "models/plate-detector-generic.pt")
 YOLO_PLATE_CONF_THRESHOLD = _float("YOLO_PLATE_CONF_THRESHOLD", 0.50)
 ANPR_OCR_MIN_CONFIDENCE = _float("ANPR_OCR_MIN_CONFIDENCE", 0.65)
 ANPR_MIN_CROP_WIDTH = _int("ANPR_MIN_CROP_WIDTH", 80)

@@ -17,6 +17,20 @@ COPY . .
 
 RUN mkdir -p /app/models /data/snapshots
 
+# Plate-localization weights — see plate_detector.py's docstring for the
+# full provenance/license/accuracy-caveat writeup; short version: a real,
+# verified, Apache-2.0 YOLOv8 model (yasirfaizahmed/license-plate-object-detection
+# on Hugging Face, trained on the public keremberke license-plate-detection
+# dataset), not a fine-tuned Indian-plate model, since no labeled Indian-plate
+# dataset exists in this environment to train one from. Retries a couple
+# times but never fails the build on a network hiccup — plate_detector.py
+# already handles a missing weights file by disabling ANPR cleanly, exactly
+# as it would if this download simply didn't happen.
+RUN curl -sL --retry 3 --retry-delay 2 -f \
+      -o models/plate-detector-generic.pt \
+      "https://huggingface.co/yasirfaizahmed/license-plate-object-detection/resolve/main/best.pt" \
+    || echo "WARNING: plate detector download failed — ANPR will stay disabled until models/plate-detector-generic.pt is provided some other way"
+
 EXPOSE 9090
 
 CMD ["python", "-u", "main.py"]
