@@ -35,26 +35,28 @@ export function useHls(cameraId: string | null) {
 
     if (!video) return;
 
-    if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      // Safari (and some WebViews) play HLS natively — no library needed.
-      video.src = src;
-      const onPlaying = () => !cancelled && setStatus("live");
-      const onError = () => !cancelled && setStatus("error");
-      video.addEventListener("playing", onPlaying);
-      video.addEventListener("error", onError);
-      return () => {
-        cancelled = true;
-        video.removeEventListener("playing", onPlaying);
-        video.removeEventListener("error", onError);
-      };
-    }
-
     (async () => {
       const { default: HlsLib } = await import("hls.js");
       if (cancelled || !video) return;
 
+      // hls.js (MSE-based) first, even though most browsers' `canPlayType`
+      // claims some level of native HLS support — that claim is not
+      // trustworthy: Chromium returns "maybe" for the HLS MIME type
+      // without actually being able to demux it (confirmed the hard way —
+      // every tile either errored or hung on "connecting" forever until
+      // this check was reordered). Only fall back to a plain `video.src`
+      // when hls.js itself says it can't run (the real native-HLS case,
+      // e.g. Safari/iOS, which doesn't support MSE-based playback well).
       if (!HlsLib.isSupported()) {
-        setStatus("error");
+        if (!video.canPlayType("application/vnd.apple.mpegurl")) {
+          setStatus("error");
+          return;
+        }
+        video.src = src;
+        const onPlaying = () => !cancelled && setStatus("live");
+        const onError = () => !cancelled && setStatus("error");
+        video.addEventListener("playing", onPlaying);
+        video.addEventListener("error", onError);
         return;
       }
 
@@ -67,8 +69,32 @@ export function useHls(cameraId: string | null) {
       hls.on(HlsLib.Events.FRAG_BUFFERED, () => {
         if (!cancelled) setStatus("live");
       });
+
+      // hls.js's own documented recovery pattern, not a custom retry loop —
+      // a fatal error here is very often transient (a stalled segment
+      // fetch, a momentary transcode hiccup upstream) rather than the
+      // stream actually being gone, confirmed by watching tiles flip
+      // between "live" and "error" and back on their own under load. Give
+      // it a few recovery attempts before actually reporting "error".
+      let recoveryAttempts = 0;
       hls.on(HlsLib.Events.ERROR, (_event, data) => {
-        if (!cancelled && data.fatal) setStatus("error");
+        if (cancelled || !data.fatal || !hls) return;
+        if (recoveryAttempts >= 3) {
+          setStatus("error");
+          return;
+        }
+        recoveryAttempts += 1;
+        switch (data.type) {
+          case HlsLib.ErrorTypes.NETWORK_ERROR:
+            hls.startLoad();
+            break;
+          case HlsLib.ErrorTypes.MEDIA_ERROR:
+            hls.recoverMediaError();
+            break;
+          default:
+            setStatus("error");
+            break;
+        }
       });
     })();
 
