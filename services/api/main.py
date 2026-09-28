@@ -27,7 +27,7 @@ from api import admin, alerts, audit, auth, cameras, evidence, tracking, watchli
 from config import settings
 from metrics import MetricsMiddleware, metrics_endpoint
 from security.rate_limit import GeneralRateLimitMiddleware
-from services.api.services import plate_event_consumer, vehicle_event_consumer, watchlist_engine
+from services import plate_event_consumer, vehicle_event_consumer, watchlist_engine
 
 logging.basicConfig(
     level=settings.log_level,

@@ -23,7 +23,7 @@ from sqlalchemy import select
 
 from config import settings
 from database import AsyncSessionLocal
-from services.api.models import Jurisdiction, Permission, Role, RolePermission, User, UserJurisdiction
+from models.rbac import Jurisdiction, Permission, Role, RolePermission, User, UserJurisdiction
 from security.passwords import hash_password
 
 # Overridable via SEED_DEMO_PASSWORD; the literal here is a dev/demo

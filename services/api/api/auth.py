@@ -23,7 +23,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_current_user, get_db
 from config import settings
-from services.api.models import Jurisdiction, User, UserJurisdiction
+from models.rbac import Jurisdiction, User, UserJurisdiction
 from schemas.auth import (
     ForgotPasswordRequest,
     JurisdictionOut,

@@ -14,7 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db
-from services.api.models import User
+from models.rbac import User
 from security.rbac import require_permission
 
 router = APIRouter(prefix="/admin/users", tags=["admin"])

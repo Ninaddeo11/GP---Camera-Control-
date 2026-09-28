@@ -22,7 +22,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config import settings
-from services.api.models import Jurisdiction, Camera
+from models.camera import Camera
+from models.rbac import Jurisdiction
 
 
 def _resolve_protocol(entry: dict) -> str:

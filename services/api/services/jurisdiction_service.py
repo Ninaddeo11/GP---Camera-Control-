@@ -1,7 +1,7 @@
 """Resolves `isInJurisdiction(user, resource)` by walking the jurisdiction
 tree, rather than a flat list of camera-level grants.
 
-A user is granted one or more jurisdiction nodes (from services.api.models import *.UserJurisdiction).
+A user is granted one or more jurisdiction nodes (models.rbac.UserJurisdiction).
 Granting a node implicitly grants every descendant of that node too (a
 district grant covers all its stations; the statewide root grant covers
 the entire tree, including department branches — see models/rbac.py). This
@@ -16,7 +16,7 @@ import uuid
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from services.api.models import Jurisdiction, User, UserJurisdiction
+from models.rbac import Jurisdiction, User, UserJurisdiction
 
 
 async def user_has_statewide_grant(db: AsyncSession, user: User) -> bool:
@@ -39,7 +39,7 @@ async def user_has_statewide_grant(db: AsyncSession, user: User) -> bool:
 async def get_user_scope_jurisdiction_ids(db: AsyncSession, user: User) -> set[uuid.UUID]:
     """All jurisdiction ids `user` has access to: their directly granted
     nodes plus every descendant of each. Returns an empty set for a user
-    with no grants yet (least-privilege default — see from services.api.models import *.User).
+    with no grants yet (least-privilege default — see models.rbac.User).
     """
     granted = (
         await db.execute(

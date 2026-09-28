@@ -13,8 +13,8 @@ from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db
-from services.api.models import *
-from services.api.models import *
+from models.camera import Camera
+from models.rbac import User
 from schemas.camera import CameraCreate, CameraOut, CameraSyncResult, CameraUpdate
 from security.rbac import (
     ForbiddenError,

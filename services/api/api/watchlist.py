@@ -18,12 +18,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from api.deps import get_db
-from services.api.models import Camera
-from services.api.models import User
-from services.api.models import WATCHLIST_PRIORITIES, WatchlistEntry, WatchlistMatch
+from models.camera import Camera
+from models.rbac import User
+from models.watchlist import WATCHLIST_PRIORITIES, WatchlistEntry, WatchlistMatch
 from schemas.watchlist import WatchlistEntryCreate, WatchlistEntryOut, WatchlistMatchOut
 from security.rbac import require_permission
-from services.api.services import media
+from services import media
 from services.jurisdiction_service import get_user_scope_jurisdiction_ids
 
 router = APIRouter(prefix="/watchlist", tags=["watchlist"])

@@ -35,8 +35,8 @@ from sqlalchemy import delete, select
 
 from config import settings
 from database import AsyncSessionLocal
-from services.api.models import PlateEventRecord
-from services.api.models import VehicleEventRecord
+from models.plate_event import PlateEventRecord
+from models.vehicle_event import VehicleEventRecord
 
 logging.basicConfig(level="INFO", format="%(asctime)s %(levelname)s %(message)s", stream=sys.stdout)
 log = logging.getLogger("cleanup_expired_evidence")

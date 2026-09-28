@@ -27,9 +27,9 @@ from sqlalchemy import select
 from config import settings
 from database import AsyncSessionLocal
 from metrics import WATCHLIST_MATCHES_TOTAL
-from services.api.models import Camera
-from services.api.models import WatchlistEntry, WatchlistMatch
-from services.api.services import media
+from models.camera import Camera
+from models.watchlist import WatchlistEntry, WatchlistMatch
+from services import media
 from services.alert_dispatcher import broadcaster
 
 log = logging.getLogger("api.watchlist_engine")

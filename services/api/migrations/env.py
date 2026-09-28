@@ -7,12 +7,12 @@ from alembic import context
 from sqlalchemy.ext.asyncio import async_engine_from_config
 from sqlalchemy.pool import NullPool
 
-from services.api.config import settings
-from services.api.database import Base
+from config import settings
+from database import Base
 
 # Import every model module so Base.metadata is fully populated before
 # `alembic revision --autogenerate` (or offline mode) inspects it.
-from services.api.models import *
+import models  # noqa: F401,E402
 
 config = context.config
 if config.config_file_name is not None:

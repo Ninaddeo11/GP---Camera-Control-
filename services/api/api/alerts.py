@@ -17,7 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from database import AsyncSessionLocal
-from services.api.models import User
+from models.rbac import User
 from security.jwt import InvalidTokenError, TokenType, decode_token
 from security.rbac import get_permission_codes
 from services.alert_dispatcher import broadcaster

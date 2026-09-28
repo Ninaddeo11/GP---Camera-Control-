@@ -13,12 +13,15 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from services.api.models import Camera, PlateEventRecord, User, VehicleEventRecord
 
 from api.deps import get_db
+from models.camera import Camera
+from models.plate_event import PlateEventRecord
+from models.rbac import User
+from models.vehicle_event import VehicleEventRecord
 from schemas.tracking import RecentDetectionOut, RouteGeoJSON, TraversalResult, VehicleEventOut
 from security.rbac import require_permission
-from services.api.services import media, vehicle_trace
+from services import media, vehicle_trace
 from services.jurisdiction_service import get_user_scope_jurisdiction_ids
 
 router = APIRouter(prefix="/tracking", tags=["tracking"])
