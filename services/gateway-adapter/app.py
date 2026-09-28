@@ -83,7 +83,14 @@ def _guess_coords(name: str) -> tuple[float | None, float | None]:
 
 app = FastAPI()
 
-_client = httpx.AsyncClient(follow_redirects=True, timeout=20.0)
+# No automatic redirect-following: the login POST 302-redirects to "/" on
+# success, and that root page is behind the same "browser required" check
+# as everything else — letting httpx auto-follow it turned a successful
+# login into a hard failure, since the followed GET's response status
+# (403, before this fix) is what raise_for_status() saw, not the login
+# POST's own 302. The Set-Cookie header we actually need arrives on the
+# POST response itself; nothing here needs the redirect followed.
+_client = httpx.AsyncClient(follow_redirects=False, timeout=20.0)
 _session_cookie: str | None = None
 _session_lock = asyncio.Lock()
 
@@ -94,7 +101,8 @@ async def _login() -> str:
         data={"email": GATEWAY_EMAIL, "password": GATEWAY_PASSWORD},
         headers=BROWSER_HEADERS,
     )
-    resp.raise_for_status()
+    if resp.status_code not in (200, 302):
+        resp.raise_for_status()
     cookie = resp.cookies.get("sentinel") or _client.cookies.get("sentinel")
     if not cookie:
         raise RuntimeError("gateway login did not yield a session cookie — check credentials")
@@ -117,11 +125,19 @@ async def _proxied_get(path: str) -> httpx.Response:
         headers={**BROWSER_HEADERS, "Cookie": f"sentinel={cookie}"},
     )
     if resp.status_code in (401, 403):
-        # Session expired or was never valid — re-login once and retry,
-        # rather than fail every request until this container restarts.
+        # Session expired (or the gateway allows only one session per
+        # account and something else just logged in) — re-login once and
+        # retry. Under real load this fires from many camera requests at
+        # once, all holding the SAME stale cookie: naively re-logging in
+        # per request would have each fresh login invalidate the one
+        # before it, so nobody's retry ever lands. Only actually log in
+        # if `_session_cookie` still equals the stale value this request
+        # saw — whoever gets there first refreshes it, everyone else
+        # waiting on the lock just reuses that.
         global _session_cookie
         async with _session_lock:
-            _session_cookie = await _login()
+            if _session_cookie == cookie:
+                _session_cookie = await _login()
         resp = await _client.get(
             f"{GATEWAY_BASE_URL}{path}",
             headers={**BROWSER_HEADERS, "Cookie": f"sentinel={_session_cookie}"},
