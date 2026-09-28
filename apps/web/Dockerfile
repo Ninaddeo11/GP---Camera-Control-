@@ -15,9 +15,14 @@ COPY . .
 ARG NEXT_PUBLIC_API_BASE_URL=https://localhost/api
 ARG NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL=https://localhost/go2rtc
 ARG NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS=true
+# "whep" (default, lower latency) for stacks that can carry WebRTC's UDP
+# media plane, like the local docker-compose stack; "hls" wherever that
+# isn't true — e.g. Render, which proxies HTTPS only. See use-camera-feed.ts.
+ARG NEXT_PUBLIC_VIDEO_PROTOCOL=whep
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL=$NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL
 ENV NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS=$NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS
+ENV NEXT_PUBLIC_VIDEO_PROTOCOL=$NEXT_PUBLIC_VIDEO_PROTOCOL
 RUN npm run build
 
 FROM node:20-alpine AS runner

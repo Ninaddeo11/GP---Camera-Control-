@@ -1,7 +1,7 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { useWhep } from "@/lib/use-whep";
+import { useCameraFeed } from "@/lib/use-camera-feed";
 import { cn } from "@/lib/utils";
 import type { CameraOut } from "@/lib/types";
 
@@ -18,7 +18,7 @@ interface LiveFeedProps {
 }
 
 export function LiveFeed({ camera, onExpand, className }: LiveFeedProps) {
-  const { videoRef, status } = useWhep(camera.camera_id);
+  const { videoRef, status } = useCameraFeed(camera.camera_id);
 
   return (
     <button

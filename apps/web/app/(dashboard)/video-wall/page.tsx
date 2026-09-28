@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LiveFeed } from "@/components/live-feed";
 import { apiFetch, ApiRequestError } from "@/lib/api-client";
-import { useWhep } from "@/lib/use-whep";
+import { useCameraFeed } from "@/lib/use-camera-feed";
 import type { CameraOut } from "@/lib/types";
 
 type GridSize = 2 | 3 | 4;
@@ -69,7 +69,7 @@ export default function VideoWallPage() {
 }
 
 function ExpandedFeedModal({ camera, onClose }: { camera: CameraOut; onClose: () => void }) {
-  const { videoRef, status } = useWhep(camera.camera_id);
+  const { videoRef, status } = useCameraFeed(camera.camera_id);
 
   return (
     <div
