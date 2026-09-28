@@ -85,12 +85,21 @@ async def sync_from_catalogue(db: AsyncSession) -> tuple[int, int, list[str]]:
         camera.codec = entry.get("codec", "")
         camera.fps = float(entry.get("fps", 0) or 0)
 
-        # Only set on first sync — never overwrite a manually corrected
-        # jurisdiction assignment or GIS fix on a later sync.
+        # Jurisdiction: only set on first sync — never overwrite a
+        # manually corrected assignment on a later sync.
         if is_new and jurisdiction is not None:
             camera.jurisdiction_id = jurisdiction.id
+
+        # Location: set whenever the camera doesn't have one yet, not
+        # only on first sync — the catalogue can resolve a camera's
+        # coordinates asynchronously after it's first seen (e.g.
+        # gateway-adapter's geocoding, which can't block the catalogue
+        # response long enough to finish on the first poll), so a later
+        # sync is often the first one to actually have lat/lon for it.
+        # Still never overwrites a value that's already set, manually
+        # corrected or not.
         lat, lon = entry.get("lat"), entry.get("lon")
-        if is_new and lat is not None and lon is not None:
+        if camera.location is None and lat is not None and lon is not None:
             camera.location = WKTElement(f"POINT({lon} {lat})", srid=4326)
 
         if camera.jurisdiction_id is None:

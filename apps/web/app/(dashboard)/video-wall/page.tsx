@@ -15,6 +15,7 @@ export default function VideoWallPage() {
   const [cameras, setCameras] = useState<CameraOut[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [gridSize, setGridSize] = useState<GridSize>(2);
+  const [page, setPage] = useState(0);
   const [expanded, setExpanded] = useState<CameraOut | null>(null);
 
   useEffect(() => {
@@ -22,6 +23,23 @@ export default function VideoWallPage() {
       .then(setCameras)
       .catch((err) => setError(err instanceof ApiRequestError ? err.message : "Failed to load cameras."));
   }, []);
+
+  // Each visible tile opens its own WebRTC/HLS connection and, server
+  // side, its own transcode — rendering every camera at once (as this
+  // page used to, regardless of grid size) tries to run dozens of those
+  // simultaneously and none of them ever finish connecting, confirmed
+  // against both a real 30-camera gateway and a resource-constrained
+  // host. Paginating to exactly what the selected grid actually shows
+  // keeps concurrent streams bounded to at most 16 (4×4).
+  const perPage = gridSize * gridSize;
+  const pageCount = Math.max(1, Math.ceil(cameras.length / perPage));
+  const currentPage = Math.min(page, pageCount - 1);
+  const visibleCameras = cameras.slice(currentPage * perPage, currentPage * perPage + perPage);
+
+  function changeGridSize(size: GridSize) {
+    setGridSize(size);
+    setPage(0);
+  }
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -36,7 +54,7 @@ export default function VideoWallPage() {
               key={size}
               variant={gridSize === size ? "primary" : "secondary"}
               size="sm"
-              onClick={() => setGridSize(size)}
+              onClick={() => changeGridSize(size)}
             >
               {size}×{size}
             </Button>
@@ -57,9 +75,28 @@ export default function VideoWallPage() {
           className="grid flex-1 gap-3 overflow-y-auto"
           style={{ gridTemplateColumns: `repeat(${gridSize}, minmax(0, 1fr))` }}
         >
-          {cameras.map((camera) => (
+          {visibleCameras.map((camera) => (
             <LiveFeed key={camera.id} camera={camera} onExpand={() => setExpanded(camera)} />
           ))}
+        </div>
+      )}
+
+      {pageCount > 1 && (
+        <div className="flex items-center justify-center gap-3">
+          <Button variant="secondary" size="sm" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>
+            Previous
+          </Button>
+          <span className="text-sm text-muted">
+            Page {currentPage + 1} of {pageCount}
+          </span>
+          <Button
+            variant="secondary"
+            size="sm"
+            disabled={currentPage >= pageCount - 1}
+            onClick={() => setPage(currentPage + 1)}
+          >
+            Next
+          </Button>
         </div>
       )}
 

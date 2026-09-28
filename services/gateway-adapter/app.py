@@ -51,34 +51,68 @@ BROWSER_HEADERS = {
     "Referer": f"{GATEWAY_BASE_URL}/",
 }
 
-# Well-known city/locality centroids, matched against substrings in a
-# camera's name — real, public coordinates, never fabricated per-camera
-# precision the gateway doesn't actually give us. Cameras with no match
-# just get no lat/lon, which camera_registry_sync.py already treats as
-# "skip GIS placement, don't guess" — never wrong, just less precise.
-_PLACE_COORDS: list[tuple[str, float, float]] = [
-    ("rajkot", 22.3039, 70.8022),
-    ("junagadh", 21.5222, 70.4579),
-    ("gandhidham", 23.0754, 70.1337),
-    ("patan", 23.8493, 72.1266),
-    ("navsari", 20.9467, 72.9520),
-    ("bilimora", 20.7642, 72.9558),
-    ("gir-somnath", 20.9014, 70.4011),
-    ("gir somnath", 20.9014, 70.4011),
-    ("dehgam", 23.1667, 72.8167),
-    ("adalaj", 23.1667, 72.5833),
-    ("paldi", 23.0175, 72.5645),
-    ("janpath", 23.0225, 72.5714),
-    ("visat", 23.1000, 72.5833),
-]
+# The real gateway gives us a camera name, never coordinates — geocoded
+# here via OpenStreetMap's Nominatim (free, no API key, well-known public
+# service) rather than a small hand-maintained city lookup, since a
+# 30-camera list has too many specific localities (not just city names)
+# for that to cover well. Real geocoded coordinates, never fabricated;
+# a camera Nominatim can't resolve just gets no lat/lon, which
+# camera_registry_sync.py already treats as "skip GIS placement, don't
+# guess" — never wrong, just unplaced on the map.
+#
+# Cached per camera_id forever (module-level, in-memory): Nominatim's
+# usage policy caps requests at 1/second and requires caching results
+# rather than re-querying — reasonable here anyway, since a camera's
+# name/location doesn't change between polls.
+_GEOCODE_CACHE: dict[str, tuple[float | None, float | None]] = {}
+_geocode_lock = asyncio.Lock()
+
+NOMINATIM_HEADERS = {
+    # Nominatim's usage policy requires an identifying User-Agent (not a
+    # generic browser one) — https://operations.osmfoundation.org/policies/nominatim/
+    "User-Agent": "SentinelGrid-gateway-adapter/1.0 (hackathon camera registry geocoding)",
+}
 
 
-def _guess_coords(name: str) -> tuple[float | None, float | None]:
-    lowered = name.lower()
-    for token, lat, lon in _PLACE_COORDS:
-        if token in lowered:
-            return lat, lon
-    return None, None
+def _geocode_lookup(camera_id: str, name: str) -> tuple[float | None, float | None]:
+    """Non-blocking: returns the cached result immediately (None, None
+    the first time), and schedules a background lookup for a cache miss.
+    /api/ingest can't afford to block on this — stream_manager.py's
+    catalogue fetch has a 10s timeout, and geocoding all 30 cameras
+    serially at Nominatim's required 1-request/second pace takes 30s+ on
+    a cold cache. Results just show up a poll cycle later instead.
+    """
+    if camera_id in _GEOCODE_CACHE:
+        return _GEOCODE_CACHE[camera_id]
+    asyncio.create_task(_geocode_background(camera_id, name))
+    return (None, None)
+
+
+async def _geocode_background(camera_id: str, name: str) -> None:
+    async with _geocode_lock:
+        if camera_id in _GEOCODE_CACHE:  # another task may have just filled it
+            return
+
+        # Strip a leading catalogue index ("01 ", "23 ") — it's not part
+        # of the place name and only confuses the geocoder.
+        query = f"{name.split(maxsplit=1)[-1] if name[:2].isdigit() else name}, Gujarat, India"
+        coords: tuple[float | None, float | None] = (None, None)
+        try:
+            resp = await _client.get(
+                "https://nominatim.openstreetmap.org/search",
+                params={"q": query, "format": "json", "limit": 1},
+                headers=NOMINATIM_HEADERS,
+                timeout=10.0,
+            )
+            resp.raise_for_status()
+            results = resp.json()
+            if results:
+                coords = (float(results[0]["lat"]), float(results[0]["lon"]))
+        except Exception:
+            log.warning("geocoding failed for %s (%r) — leaving unplaced", camera_id, name)
+
+        _GEOCODE_CACHE[camera_id] = coords
+        await asyncio.sleep(1.0)  # Nominatim's usage policy: max 1 request/second
 
 
 app = FastAPI()
@@ -161,7 +195,7 @@ async def ingest():
     cameras = []
     for cam in resp.json():
         camera_id = cam["id"]
-        lat, lon = _guess_coords(cam["name"])
+        lat, lon = _geocode_lookup(camera_id, cam["name"])
         cameras.append(
             {
                 "camera_id": camera_id,
