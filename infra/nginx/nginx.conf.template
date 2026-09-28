@@ -1,10 +1,24 @@
 # Reverse proxy + TLS termination for the web dashboard and API.
 #
-# go2rtc (WHEP/HLS, :1984) is deliberately NOT proxied here — the browser
-# connects to it directly (see apps/web/lib/use-whep.ts's documented
-# caveat on why that's a known gap, not a design choice). Terminating TLS
-# in front of go2rtc too, and adding an authenticating layer, is Phase 10
-# follow-up work tracked in README.md, not yet done.
+# This file is a template (envsubst'd by the official nginx image's own
+# entrypoint at container start — see docker-compose.yml's nginx service),
+# not a static config: ${GO2RTC_CSP_ORIGIN} below is the one value that
+# needs to change if NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL's origin ever isn't
+# localhost. Keeping that as a hardcoded literal here (the state this file
+# was in until this comment was added) is exactly how CSP and the actual
+# frontend config drift apart silently — the video wall would sit on
+# "connecting" forever in a non-localhost deployment with no error
+# pointing at nginx as the cause. Nothing else in this file is templated;
+# every other `$name` below is nginx's own runtime variable, not a shell
+# one, and envsubst only touches names that match an actual container env
+# var (see the `environment:` block on the nginx service), so those are
+# left alone.
+#
+# go2rtc's WHEP/API port (:1984) is also proxied through this same HTTPS
+# origin at /go2rtc/ (see that location block below) — not left for the
+# browser to hit directly, which used to be a mixed-content failure mode.
+# Authenticating that proxied path is still open Phase 10 follow-up work
+# (see README.md "Known gaps").
 
 events {
     worker_connections 1024;
@@ -59,9 +73,9 @@ http {
         # connect-src includes the go2rtc origin the BROWSER actually
         # resolves (not the docker-internal "go2rtc" hostname — the
         # browser can't see that network at all) plus ws(s): for the live
-        # alert stream. Keep this in sync with
-        # NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL in .env if that's ever anything
-        # other than localhost:1984.
+        # alert stream. ${GO2RTC_CSP_ORIGIN} is substituted at container
+        # start (see the file-level comment above) — no longer a literal
+        # to keep manually in sync with NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL.
         #
         # script-src needs 'unsafe-inline': confirmed the hard way (a
         # completely blank login page, first time this was ever tested in
@@ -76,7 +90,7 @@ http {
         # not done here; tracked as a Transformation Phase 15 follow-up
         # (see README.md "Known gaps"), not silently left insecure without
         # a note.
-        add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: http://localhost:1984; frame-ancestors 'none';" always;
+        add_header Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: ${GO2RTC_CSP_ORIGIN}; frame-ancestors 'none';" always;
 
         location / {
             set $upstream_web http://web:3000;

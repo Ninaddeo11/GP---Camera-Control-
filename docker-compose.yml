@@ -244,8 +244,20 @@ services:
     depends_on:
       - web
       - api
+    # nginx.conf is a template, not a static file — the official image's
+    # own entrypoint envsubst's it at container start (see the file's own
+    # header comment for why: GO2RTC_CSP_ORIGIN used to be a hardcoded
+    # literal in the CSP header, silently able to drift from
+    # NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL below with no error pointing at
+    # nginx as the cause). NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx (not the
+    # image's default of /etc/nginx/conf.d) because this is nginx's whole
+    # top-level config (its own `events {}`/`http {}` blocks), not a
+    # conf.d fragment meant to be `include`d into one.
+    environment:
+      NGINX_ENVSUBST_OUTPUT_DIR: /etc/nginx
+      GO2RTC_CSP_ORIGIN: ${GO2RTC_CSP_ORIGIN:-http://localhost:1984}
     volumes:
-      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./infra/nginx/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
       - ./infra/nginx/certs:/etc/nginx/certs:ro
     ports:
       - "80:80"
