@@ -1,9 +1,4 @@
-# Placeholder checked into git so the go2rtc container has a valid config on
-# the very first `docker compose up`, before stream_manager.py performs its
-# first reconciliation and overwrites this file from templates/go2rtc.yaml.j2.
-#
-# go2rtc is Sentinel Grid's only re-streaming layer (RTSP + WHEP + HLS all
-# come from this one instance) — there is no mediamtx sidecar.
+
 api:
   listen: ":1984"
   origin: "*"
@@ -14,10 +9,31 @@ rtsp:
 webrtc:
   listen: ":8555"
   candidates:
+    # A direct host candidate, not just the STUN-derived one — this stack
+    # runs behind Docker Desktop's NAT/port-mapping layer even for "local"
+    # access, and relying on STUN alone left the browser with no candidate
+    # it could actually reach: WHEP signaling succeeded (201 Created) but
+    # the ICE/media connection then silently stalled and every tile
+    # eventually flipped to "error". 127.0.0.1:8555 matches the port this
+    # compose file actually publishes go2rtc's WebRTC listener on, so the
+    # browser (which always reaches this stack via localhost) has a
+    # candidate that resolves to a real, reachable socket.
+    - "127.0.0.1:8555"
     - stun:stun.l.google.com:19302
 
 log:
   level: info
   format: text
 
-streams: {}
+streams:
+
+  AMC-JUNCTION-001: "ffmpeg:https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8#video=h264"
+
+  AMC-JUNCTION-002: "ffmpeg:https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8#video=h264"
+
+  SG-HIGHWAY-003: "ffmpeg:https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8#video=h264"
+
+  SURAT-RING-ROAD-004: "rtsp://192.0.2.10:554/unreachable#transport=tcp"
+
+  VADODARA-CIRCLE-005: "ffmpeg:https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8#video=h264"
+

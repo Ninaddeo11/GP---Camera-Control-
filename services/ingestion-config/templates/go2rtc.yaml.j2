@@ -16,6 +16,16 @@ rtsp:
 webrtc:
   listen: ":8555"
   candidates:
+    # A direct host candidate, not just the STUN-derived one — this stack
+    # runs behind Docker Desktop's NAT/port-mapping layer even for "local"
+    # access, and relying on STUN alone left the browser with no candidate
+    # it could actually reach: WHEP signaling succeeded (201 Created) but
+    # the ICE/media connection then silently stalled and every tile
+    # eventually flipped to "error". 127.0.0.1:8555 matches the port this
+    # compose file actually publishes go2rtc's WebRTC listener on, so the
+    # browser (which always reaches this stack via localhost) has a
+    # candidate that resolves to a real, reachable socket.
+    - "127.0.0.1:8555"
     - stun:stun.l.google.com:19302
 
 log:

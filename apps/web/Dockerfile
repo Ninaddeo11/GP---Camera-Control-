@@ -13,7 +13,7 @@ COPY . .
 # effect on them, since the code reading them has already been compiled
 # away by then. They have to arrive as build args instead.
 ARG NEXT_PUBLIC_API_BASE_URL=https://localhost/api
-ARG NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL=http://localhost:1984
+ARG NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL=https://localhost/go2rtc
 ARG NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS=true
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL=$NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL

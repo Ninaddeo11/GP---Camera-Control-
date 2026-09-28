@@ -34,10 +34,13 @@ class Settings(BaseSettings):
     jwt_access_token_expire_minutes: int = 15
     jwt_refresh_token_expire_days: int = 7
 
-    # -- Camera catalogue (for the /cameras/sync endpoint) -----------------
+    # -- Camera catalogue (for the /cameras/sync endpoint, both the manual
+    # one and the automatic background scheduler — see
+    # services/camera_sync_scheduler.py) -----------------
     ingest_api_url: str = "http://catalogue:9000/api/ingest"
     ingest_api_auth_header: str = ""
     ingest_api_auth_token: str = ""
+    ingest_poll_interval_seconds: int = 60
 
     # -- CORS ----------------------------------------------------------------
     cors_origins: str = "http://localhost:3000"

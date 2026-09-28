@@ -27,7 +27,7 @@ from api import admin, alerts, audit, auth, cameras, evidence, tracking, watchli
 from config import settings
 from metrics import MetricsMiddleware, metrics_endpoint
 from security.rate_limit import GeneralRateLimitMiddleware
-from services import plate_event_consumer, vehicle_event_consumer, watchlist_engine
+from services import camera_sync_scheduler, plate_event_consumer, vehicle_event_consumer, watchlist_engine
 
 logging.basicConfig(
     level=settings.log_level,
@@ -45,6 +45,7 @@ async def lifespan(app: FastAPI):
     _background_tasks.append(asyncio.create_task(plate_event_consumer.run(_background_stop)))
     _background_tasks.append(asyncio.create_task(vehicle_event_consumer.run(_background_stop)))
     _background_tasks.append(asyncio.create_task(watchlist_engine.run(_background_stop)))
+    _background_tasks.append(asyncio.create_task(camera_sync_scheduler.run(_background_stop)))
     log.info("Background consumers started")
     yield
     _background_stop.set()

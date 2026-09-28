@@ -60,8 +60,14 @@ _ALL_CAMERAS: dict[str, CameraEntry] = {
         resolution="1280x720",
         codec="h264",
         fps=25,
+        # Was rtsp://wowzaec2demo.streamlock.net — that public Wowza demo
+        # server is on port 554, which is blocked outbound on this
+        # network/sandbox (confirmed via a raw TCP dial: it times out every
+        # time, regardless of the app). Swapped for a public HTTPS test
+        # stream (port 443, confirmed reachable) so this demo camera
+        # actually plays instead of sitting on "error" forever.
         protocols=Protocols(
-            rtsp="rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4"
+            hls="https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8"
         ),
     ),
     "AMC-JUNCTION-002": CameraEntry(
@@ -73,8 +79,9 @@ _ALL_CAMERAS: dict[str, CameraEntry] = {
         resolution="1920x1080",
         codec="h264",
         fps=25,
+        # See AMC-JUNCTION-001's comment — same port-554-blocked swap.
         protocols=Protocols(
-            rtsp="rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_175k.mp4"
+            hls="https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8"
         ),
     ),
     "SG-HIGHWAY-003": CameraEntry(
@@ -110,8 +117,9 @@ _ALL_CAMERAS: dict[str, CameraEntry] = {
         resolution="1280x720",
         codec="h264",
         fps=25,
+        # See AMC-JUNCTION-001's comment — same port-554-blocked swap.
         protocols=Protocols(
-            rtsp="rtsp://wowzaec2demo.streamlock.net/vod/mp4:BigBuckBunny_115k.mp4"
+            hls="https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/gear1/prog_index.m3u8"
         ),
     ),
 }
