@@ -155,6 +155,30 @@ function LoginForm() {
               Request access
             </Link>
           </p>
+
+          {/* Demo/evaluation credentials, visible only in non-production
+              builds (NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS) — these are the
+              seed_users.py accounts, real users on a real deployment
+              never see this block. Password shown is the shared demo
+              default (SEED_DEMO_PASSWORD); the super-admin account is
+              deliberately NOT listed here since it uses its own
+              per-deployment password. */}
+          {process.env.NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS === "true" && (
+            <div className="mt-6 rounded border border-lp-border bg-lp-bg-1/40 p-3 text-[11px] text-lp-text-2">
+              <p className="font-semibold uppercase tracking-wider text-lp-text-1">
+                Demo accounts (evaluation only)
+              </p>
+              <p className="mt-1">
+                Password for all: <code className="text-lp-text-0">ChangeMe!2026</code>
+              </p>
+              <ul className="mt-1.5 grid grid-cols-1 gap-x-4 gap-y-0.5 sm:grid-cols-2">
+                <li><code className="text-lp-text-0">dgp.shah</code> — T1 State Command</li>
+                <li><code className="text-lp-text-0">sp.ahmedabad</code> — T3 District</li>
+                <li><code className="text-lp-text-0">pi.station</code> — T5 Station</li>
+                <li><code className="text-lp-text-0">operator.rto</code> — T8 Dept.</li>
+              </ul>
+            </div>
+          )}
         </div>
       </div>
     </div>

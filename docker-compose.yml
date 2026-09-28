@@ -190,6 +190,7 @@ services:
       args:
         NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://localhost/api}
         NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL: ${NEXT_PUBLIC_GO2RTC_WHEP_BASE_URL:-http://localhost:1984}
+        NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS: ${NEXT_PUBLIC_SHOW_DEMO_CREDENTIALS:-true}
     container_name: sentinelgrid-web
     restart: unless-stopped
     depends_on:

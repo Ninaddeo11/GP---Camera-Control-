@@ -96,8 +96,14 @@ JURISDICTIONS = [
 # so it can see and manage everything. Uses its own password, set via
 # SUPER_ADMIN_PASSWORD below, not the shared DEMO_PASSWORD every other
 # seeded account uses.
-SUPER_ADMIN_USERNAME = "ninaddeo11@gmail.com"
-SUPER_ADMIN_PASSWORD = os.environ.get("SUPER_ADMIN_PASSWORD", "2401106096")
+SUPER_ADMIN_USERNAME = os.environ.get("SUPER_ADMIN_USERNAME", "ninaddeo11@gmail.com")
+# No hardcoded fallback on purpose — unlike DEMO_PASSWORD above (a known,
+# shared demo credential by design), this account is meant to be a real
+# admin login, so its password must come from the environment on every
+# deployment rather than ever living in source. Already set on the Render
+# deployment; set it in your local .env too (SUPER_ADMIN_PASSWORD=...) if
+# running this against local/Supabase Postgres.
+SUPER_ADMIN_PASSWORD = os.environ.get("SUPER_ADMIN_PASSWORD")
 
 # (username, full_name, badge_number, role_code, department, [jurisdiction_codes])
 USERS = [
@@ -226,23 +232,35 @@ async def seed() -> None:
 
         # Standing super-admin — own password, T1 (full access, every
         # permission including user:manage), statewide jurisdiction grant.
-        await _get_or_create_user(
-            db,
-            SUPER_ADMIN_USERNAME,
-            hash_password(SUPER_ADMIN_PASSWORD),
-            "Super Admin",
-            None,
-            "State Command",
-            roles_by_code["T1"].id,
-            jurisdictions_by_code,
-            ["GJ-STATE"],
-        )
+        # Skipped (not crashed) if the password env var isn't set — this
+        # keeps the script runnable on a fresh checkout/CI without that
+        # secret, rather than either crashing or falling back to a
+        # hardcoded value.
+        if SUPER_ADMIN_PASSWORD:
+            await _get_or_create_user(
+                db,
+                SUPER_ADMIN_USERNAME,
+                hash_password(SUPER_ADMIN_PASSWORD),
+                "Super Admin",
+                None,
+                "State Command",
+                roles_by_code["T1"].id,
+                jurisdictions_by_code,
+                ["GJ-STATE"],
+            )
+        else:
+            print(
+                "SUPER_ADMIN_PASSWORD not set — skipping super-admin account "
+                "(everything else seeded normally).",
+                file=sys.stderr,
+            )
 
         await db.commit()
 
-    print(f"Seed complete. {len(USERS)} test users created/verified, plus 1 super-admin account.")
+    print(f"Seed complete. {len(USERS)} test users created/verified.")
     print(f"Demo password for every seeded account: {DEMO_PASSWORD}")
-    print(f"Super-admin login: {SUPER_ADMIN_USERNAME}")
+    if SUPER_ADMIN_PASSWORD:
+        print(f"Super-admin login: {SUPER_ADMIN_USERNAME}")
     print("Rotate or remove these accounts before any real deployment.")
 
 
